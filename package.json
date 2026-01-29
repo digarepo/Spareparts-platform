@@ -1,0 +1,38 @@
+{
+  "name": "spareparts-platform",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "eslint \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" --cache --no-error-on-unmatched-pattern",
+    "lint:fix": "npm run lint -- --fix",
+    "typecheck": "npm run typecheck:all",
+    "typecheck:all": "npm --workspaces --if-present run typecheck",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "build": "npm --workspaces --if-present run build",
+    "clean": "git clean -fdX -e '!'",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.6.0",
+    "typescript": "^5.8.4"
+  },
+  "dependencies": {
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-promise": "^7.2.1"
+  }
+}
