@@ -15,6 +15,7 @@ build/
 # Env
 .env
 .env.*.local
+.env.*
 
 # IDE / OS
 .vscode/*
@@ -28,3 +29,9 @@ docker-data/
 
 # Tooling artifacts
 tools/**/*.csv
+
+
+
+.nx/cache
+.nx/workspace-data
+vite.config.*.timestamp*

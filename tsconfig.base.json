@@ -1,27 +1,29 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "module": "ESNext",
     "moduleResolution": "Node",
     "strict": true,
-
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
-
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-
     "esModuleInterop": true,
     "resolveJsonModule": true,
-
     "baseUrl": ".",
     "paths": {
-      "@spareparts/contracts/*": ["packages/contracts/*"],
-      "@spareparts/db/*": ["packages/db/*"]
+      "@spareparts/contracts": ["packages/contracts/src/index.ts"],
+      "@spareparts/contracts/*": ["packages/contracts/src/*"],
+      "@spareparts/db": ["packages/db/src/index.ts"],
+      "@spareparts/db/*": ["packages/db/src/*"],
+      "@spareparts/ui": ["packages/ui/src/index.ts"],
+      "@spareparts/ui/*": ["packages/ui/src/*"]
     }
   }
 }

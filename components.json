@@ -1,0 +1,17 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "tailwind": {
+    "config": "apps/web/vite.config.ts",
+    "css": "apps/web/app/app.css",
+    "baseColor": "zinc",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@spareparts/ui/components",
+    "utils": "@spareparts/ui/lib/utils",
+    "ui": "@spareparts/ui/components/ui",
+    "hooks": "@spareparts/ui/hooks"
+  }
+}

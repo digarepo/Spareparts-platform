@@ -1,0 +1,37 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": [
+    "**/*",
+    "**/.server/**/*",
+    "**/.client/**/*",
+    ".react-router/types/**/*"
+  ],
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["node", "vite/client"],
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "rootDirs": [".", "./.react-router/types"],
+    "baseUrl": ".",
+    "paths": {
+      /* Local Web App Aliases */
+      "@/*": ["./app/*"],
+
+      /* Re-declare Workspace Aliases so they aren't overwritten */
+      "@spareparts/ui": ["../../packages/ui/src/index.ts"],
+      "@spareparts/ui/*": ["../../packages/ui/src/*"],
+      "@spareparts/contracts": ["../../packages/contracts/src/index.ts"],
+      "@spareparts/contracts/*": ["../../packages/contracts/src/*"],
+      "@spareparts/db": ["../../packages/db/src/index.ts"],
+      "@spareparts/db/*": ["../../packages/db/src/*"]
+    },
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true
+  }
+}
