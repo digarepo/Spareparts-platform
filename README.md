@@ -35,6 +35,7 @@ The architecture enforces **clear separation between**:
 
 High-level structure:
 
+```text
 repo-root
 │
 ├─ apps/
@@ -52,6 +53,7 @@ repo-root
 ├─ docs/                       Architecture & implementation documentation
 │
 └─ package.json
+```
 
 The monorepo is orchestrated using **Nx** to enforce dependency boundaries and enable scalable builds.
 
@@ -161,100 +163,75 @@ The system architecture is organized into **domain capabilities**.
 
 Each domain is defined through an **architecture blueprint**.
 
-Foundation Domains
-────────────────────────────────
-
-A  Repository Architecture
-B  Data & Environment
-C  Identity Scope & Authorization
-
-Identity & Access
-────────────────────────────────
-
-D  Identity Account Model
-E  Authentication Trust
-F  Authorization Roles & Scope
-
-Catalog
-────────────────────────────────
-
-G  Product Catalog Core
-H  Catalog Visibility & Publication
-I  Taxonomy & Classification
-
-Pricing & Assets
-────────────────────────────────
-
-J  Pricing Assets Governance
-
-Inventory
-────────────────────────────────
-
-K  Inventory Core Model
-L  Inventory Availability & Reservation
-M  Inventory Governance
-
-Commerce Flow
-────────────────────────────────
-
-N  Cart & Order Intent
-O  Order Lines & Pricing Snapshots
-P  Order Transitions Governance
-
-Payments
-────────────────────────────────
-
-Q  Payment Core Model
-R  Payment Authority & Escrow
-S  Payment Failure Handling
-
-Search
-────────────────────────────────
-
-T  Search Purpose & Scope
-U  Search Indexing Isolation
-V  Search Relevance Governance
-
-Administrative Interfaces
-────────────────────────────────
-
-W  Admin UI Authority
-X  Admin Visibility & Actions
-Y  Admin Auditability
-
-Seller Interfaces
-────────────────────────────────
-
-Z   Seller UI Authority
-AA  Seller Visibility Boundaries
-AB  Seller Auditability
-
-Security & Operations
-────────────────────────────────
-
-AC  Security Hardening
-AD  Data Integrity & Recovery
-AE  Observability & Operations
-
-Release Governance
-────────────────────────────────
-
-AF  Release Readiness
-AG  Migration & Cutover
-AH  Post-Release Incident Handling
-
-Fulfillment & Logistics
-────────────────────────────────
-
-AI  Fulfillment Core
-AJ  Shipment & Logistics
-AK  Delivery Tracking
-
-Customer Lifecycle
-────────────────────────────────
-
-AL  Returns & Refunds
-AM  Customer Notification Governance
+```
+Domain Architecture
+├─ Foundation Domains
+│  ├─ A  Repository Architecture
+│  ├─ B  Data & Environment
+│  └─ C  Identity Scope & Authorization
+│
+├─ Identity & Access
+│  ├─ D  Identity Account Model
+│  ├─ E  Authentication Trust
+│  └─ F  Authorization Roles & Scope
+│
+├─ Catalog
+│  ├─ G  Product Catalog Core
+│  ├─ H  Catalog Visibility & Publication
+│  └─ I  Taxonomy & Classification
+│
+├─ Pricing & Assets
+│  └─ J  Pricing Assets Governance
+│
+├─ Inventory
+│  ├─ K  Inventory Core Model
+│  ├─ L  Inventory Availability & Reservation
+│  └─ M  Inventory Governance
+│
+├─ Commerce Flow
+│  ├─ N  Cart & Order Intent
+│  ├─ O  Order Lines & Pricing Snapshots
+│  └─ P  Order Transitions Governance
+│
+├─ Payments
+│  ├─ Q  Payment Core Model
+│  ├─ R  Payment Authority & Escrow
+│  └─ S  Payment Failure Handling
+│
+├─ Search
+│  ├─ T  Search Purpose & Scope
+│  ├─ U  Search Indexing Isolation
+│  └─ V  Search Relevance Governance
+│
+├─ Administrative Interfaces
+│  ├─ W  Admin UI Authority
+│  ├─ X  Admin Visibility & Actions
+│  └─ Y  Admin Auditability
+│
+├─ Seller Interfaces
+│  ├─ Z   Seller UI Authority
+│  ├─ AA  Seller Visibility Boundaries
+│  └─ AB  Seller Auditability
+│
+├─ Security & Operations
+│  ├─ AC  Security Hardening
+│  ├─ AD  Data Integrity & Recovery
+│  └─ AE  Observability & Operations
+│
+├─ Release Governance
+│  ├─ AF  Release Readiness
+│  ├─ AG  Migration & Cutover
+│  └─ AH  Post-Release Incident Handling
+│
+├─ Fulfillment & Logistics
+│  ├─ AI  Fulfillment Core
+│  ├─ AJ  Shipment & Logistics
+│  └─ AK  Delivery Tracking
+│
+└─ Customer Lifecycle
+   ├─ AL  Returns & Refunds
+   └─ AM  Customer Notification Governance
+   ```
 
 Each domain has a **dedicated architecture blueprint** in the repository.
 
@@ -266,10 +243,13 @@ Architecture is defined through **Blueprint Domains**.
 
 Location:
 
+```
 docs/architecture/
+```
 
 Structure:
 
+```
 docs/architecture
 ├── overview.md
 ├── contracts.md
@@ -279,6 +259,7 @@ docs/architecture
 ├── security.md
 │
 └── blueprints/
+```
 
 Blueprint files describe:
 
@@ -290,7 +271,9 @@ Blueprint files describe:
 
 Example blueprint:
 
+```
 docs/architecture/blueprints/70-domain-g-product-catalog-core.md
+```
 
 Blueprints are considered **stable architecture** and must not be modified casually.
 
@@ -302,12 +285,15 @@ Implementation work is defined through **task specifications** derived from arch
 
 Location:
 
+```
 docs/implementation/tasks/
+```
 
 Tasks represent **atomic units of implementation work**.
 
 Example structure:
 
+```
 docs/implementation/tasks/
 └── phase-08-1-platform-admin-ui
 ├── infrastructure/
@@ -320,6 +306,7 @@ docs/implementation/tasks/
 ├── observability/
 ├── audit/
 └── staff/
+```
 
 Each task defines:
 
@@ -338,7 +325,9 @@ Layer
 contracts
 
 Implementation Location
+```
 packages/contracts/src/catalog/
+```
 
 Acceptance Criteria
 • packages/contracts/src/catalog exists
