@@ -403,7 +403,9 @@ All authoritative validation and policy enforcement occur within the backend dom
 
 ## Install Dependencies
 
+```
 npm install
+```
 
 ---
 
@@ -411,17 +413,23 @@ npm install
 
 Run workspace commands:
 
+```
 npx nx lint
 npx nx typecheck
+```
 
 View dependency graph:
 
+```
 npx nx graph
+```
 
 Run applications:
 
+```
 npx nx serve api
 npx nx serve storefront
+```
 
 ---
 
