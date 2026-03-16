@@ -293,5 +293,3 @@ Upon approval:
 
 **Status:** Ready for Approval
 Once approved, this becomes **non-negotiable enforcement architecture**.
-
----
