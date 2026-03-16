@@ -12,11 +12,12 @@ module.exports = {
     sourceType: 'module',
     tsconfigRootDir: __dirname,
   },
-  plugins: ['@typescript-eslint', 'import', 'promise'],
+  plugins: ['@typescript-eslint', 'import', 'promise', 'jsdoc'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
+    'plugin:jsdoc/recommended-typescript',
     'plugin:import/recommended',
     'plugin:import/typescript',
     'plugin:promise/recommended',
@@ -31,7 +32,9 @@ module.exports = {
         project: [
           './tsconfig.base.json',
           './apps/api/tsconfig.json',
-          './apps/web/tsconfig.json',
+          './apps/platform-admin/tsconfig.json',
+          './apps/merchant-dashboard/tsconfig.json',
+          './apps/storefront/tsconfig.json',
           './packages/db/tsconfig.json',
           './packages/contracts/tsconfig.json',
         ],
@@ -46,9 +49,21 @@ module.exports = {
       },
     },
     {
-      files: ['apps/web/**/*.{ts,tsx}'],
+      files: ['apps/platform-admin/**/*.{ts,tsx}'],
       parserOptions: {
-        project: ['./apps/web/tsconfig.json'],
+        project: ['./apps/platform-admin/tsconfig.json'],
+      },
+    },
+    {
+      files: ['apps/merchant-dashboard/**/*.{ts,tsx}'],
+      parserOptions: {
+        project: ['./apps/merchant-dashboard/tsconfig.json'],
+      },
+    },
+    {
+      files: ['apps/storefront/**/*.{ts,tsx}'],
+      parserOptions: {
+        project: ['./apps/storefront/tsconfig.json'],
       },
     },
     {
@@ -65,6 +80,15 @@ module.exports = {
     },
   ],
   rules: {
+    'jsdoc/check-alignment': 'warn',
+    'jsdoc/check-indentation': 'warn',
+    'jsdoc/check-param-names': 'warn',
+    'jsdoc/check-tag-names': 'warn',
+    'jsdoc/check-types': 'off',
+    'jsdoc/require-description': 'warn',
+    'jsdoc/require-param-description': 'warn',
+    'jsdoc/require-returns-description': 'warn',
+    'jsdoc/tag-lines': ['warn', 'any', { startLines: 1 }],
     'import/order': [
       'warn',
       {
