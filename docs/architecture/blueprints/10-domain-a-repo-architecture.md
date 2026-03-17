@@ -335,4 +335,10 @@ With this structure:
 **Status:** Ready for Approval
 Once approved, this becomes **non-negotiable architecture**.
 
+---
 
+When you approve this, the **next Blueprint Domain** logically becomes:
+
+**Blueprint Domain B — Backend Module Architecture (NestJS boundary rules)**
+
+Say the word when ready.
