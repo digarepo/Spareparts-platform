@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * Represents a tenant (merchant/organization) boundary.
+ *
+ * Notes:
+ * - Most tenant-scoped tables reference `tenantId`.
+ * - This model itself is platform-scoped (not filtered by tenant RLS).
+ */
+model Tenant {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships TenantMembership[]
+}
+
+/**
+ * Represents an authenticated principal.
+ *
+ * Notes:
+ * - This is identity-level, not tenancy-level.
+ * - Tenancy linkage is represented via `TenantMembership`.
+ */
+model User {
+  id        String   @id
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships TenantMembership[]
+}
+
+/**
+ * Links a user to a tenant.
+ *
+ * Notes:
+ * - `roleKey` is intentionally a simple string placeholder until Phase 3 IAM.
+ * - RLS should enforce that tenant-scoped access is filtered by tenant context.
+ */
+model TenantMembership {
+  tenantId String
+  userId   String
+
+  /**
+   * Placeholder role key (non-authoritative until IAM).
+   *
+   * Examples: "TENANT_ADMIN", "SALES"
+   */
+  roleKey String?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
