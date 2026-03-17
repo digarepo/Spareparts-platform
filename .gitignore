@@ -39,6 +39,7 @@ vite.config.*.timestamp*
 # --- Build & Tooling ---
 .nx/
 .react-router/
+apps/*/.react-router/types/
 .husky/_/
 .husky/hooks/
 
