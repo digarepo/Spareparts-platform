@@ -55,7 +55,7 @@ export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
         }),
         z.object({
             ok: z.literal(false),
-            error: ApiResponseSchema
+            error: ApiErrorSchema
         }),
     ]);
 

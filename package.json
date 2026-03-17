@@ -10,15 +10,23 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "eslint \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" --cache --no-error-on-unmatched-pattern",
-    "lint:fix": "npm run lint -- --fix",
-    "typecheck": "npm run typecheck:all",
-    "typecheck:all": "npm --workspaces --if-present run typecheck",
+    "nx": "nx",
+    "dev": "nx run-many -t dev --projects=@spareparts/storefront,@spareparts/admin-panel,@spareparts/tenant-dashboard,@spareparts/api --parallel=4",
+    "dev:storefront": "nx dev @spareparts/storefront",
+    "dev:admin-panel": "nx dev @spareparts/admin-panel",
+    "dev:tenant-dashboard": "nx dev @spareparts/tenant-dashboard",
+    "dev:api": "nx dev @spareparts/api",
+    "build": "nx run-many -t build --all",
+    "typecheck": "nx run-many -t typecheck --all",
+    "lint": "nx run-many -t lint --all",
+    "lint:fix": "nx run-many -t lint --all -- --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "build": "npm --workspaces --if-present run build",
     "clean": "git clean -fdX -e '!'",
     "prepare": "husky install"
+  },
+  "overrides": {
+    "entities": "6.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.14.5",

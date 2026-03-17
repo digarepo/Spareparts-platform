@@ -1,6 +1,5 @@
-
 import { NestFactory } from "@nestjs/core";
-
+import { ApiExceptionFilter } from "./http/api-exception.filter";
 import { AppModule } from "./app.module";
 
 /**
@@ -13,6 +12,8 @@ import { AppModule } from "./app.module";
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalFilters(new ApiExceptionFilter());
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
