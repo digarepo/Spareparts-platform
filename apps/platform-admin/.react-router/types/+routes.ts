@@ -28,6 +28,6 @@ type RouteFiles = {
 };
 
 type RouteModules = {
-  "root": typeof import("./app/root.tsx");
-  "routes/home": typeof import("./app/routes/home.tsx");
+  "root": typeof import("./app/root.js");
+  "routes/home": typeof import("./app/routes/home.js");
 };
