@@ -42,7 +42,6 @@
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-jsdoc": "^50.6.0",
     "eslint-plugin-jsx-a11y": "6.10.1",
     "eslint-plugin-react": "7.35.0",
     "eslint-plugin-react-hooks": "5.0.0",
@@ -74,7 +73,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss-animate": "^1.0.7",
-    "ulid": "^3.0.2"
+    "tailwindcss-animate": "^1.0.7"
   }
 }

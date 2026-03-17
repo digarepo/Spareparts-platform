@@ -35,19 +35,3 @@ tools/**/*.csv
 .nx/cache
 .nx/workspace-data
 vite.config.*.timestamp*
-
-# --- Build & Tooling ---
-.nx/
-.react-router/
-.husky/_/
-.husky/hooks/
-
-# --- IDE & AI ---
-.continue/
-.cursor/
-.vscode/
-.idea/
-
-# --- OS/Temp ---
-.DS_Store
-*.log

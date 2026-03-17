@@ -1,0 +1,313 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: apps/**/*, packages/**/*, domains/**/*, tsconfig.base.json, package.json
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+apps/
+  api/
+    package.json
+    tsconfig.json
+  web/
+    package.json
+    tsconfig.json
+packages/
+  contracts/
+    package.json
+    tsconfig.json
+  db/
+    package.json
+    tsconfig.json
+package.json
+tsconfig.base.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="apps/api/package.json">
+{
+  "name": "@spareparts/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.2.0",
+    "@nestjs/core": "^10.2.0",
+    "@nestjs/platform-express": "^10.2.0",
+    "@nestjs/swagger": "^7.1.0",
+    "reflect-metadata": "0.1.14",
+    "@prisma/client": "7.3.0",
+    "zod": "^4.0.0",
+    "ioredis": "5.9.2",
+    "dotenv": "^16.4.5",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.2.0",
+    "@nestjs/schematics": "^10.2.0",
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "5.4.5"
+  }
+}
+</file>
+
+<file path="apps/api/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "dist",
+    "rootDir": "src",
+
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test"]
+}
+</file>
+
+<file path="apps/web/package.json">
+{
+  "name": "@spareparts/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-router-dom": "^7.13.0",
+    "tailwindcss": "4.1.18",
+    "@tailwindcss/vite": "4.1.18",
+    "zod": "4.0.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "@types/react": "19.2.10",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.4.5"
+  }
+}
+</file>
+
+<file path="apps/web/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    "noEmit": true,
+    "isolatedModules": true,
+
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path="packages/contracts/package.json">
+{
+  "name": "@spareparts/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  }
+}
+</file>
+
+<file path="packages/contracts/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "outDir": "dist",
+    "rootDir": "src",
+
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path="packages/db/package.json">
+{
+  "name": "@spareparts/db",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step for db package'",
+    "generate": "prisma generate --schema=prisma/schema.prisma",
+    "migrate:dev": "prisma migrate dev --schema=prisma/schema.prisma",
+    "migrate:deploy": "prisma migrate deploy --schema=prisma/schema.prisma",
+    "db:seed": "ts-node --transpile-only src/seed/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "7.3.0",
+    "ioredis": "5.9.2"
+  },
+  "devDependencies": {
+    "prisma": "7.3.0",
+    "ts-node": "^10.9.1",
+    "@types/node": "^20.6.0"
+  }
+}
+</file>
+
+<file path="packages/db/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "dist",
+    "rootDir": "src",
+
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "prisma/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "spareparts-platform",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "eslint \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" --cache --no-error-on-unmatched-pattern",
+    "lint:fix": "npm run lint -- --fix",
+    "typecheck": "npm run typecheck:all",
+    "typecheck:all": "npm --workspaces --if-present run typecheck",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "build": "npm --workspaces --if-present run build",
+    "clean": "git clean -fdX -e '!'",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.6.0",
+    "typescript": "^5.8.4"
+  },
+  "dependencies": {
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-promise": "^7.2.1"
+  }
+}
+</file>
+
+<file path="tsconfig.base.json">
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@spareparts/contracts/*": ["packages/contracts/*"],
+      "@spareparts/db/*": ["packages/db/*"]
+    }
+  }
+}
+</file>
+
+</files>
