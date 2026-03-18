@@ -2,8 +2,13 @@
   "name": "@spareparts/db",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "echo 'No build step for db package'",
+    "build": "tsc -p tsconfig.json",
     "generate": "prisma generate --schema=prisma/schema.prisma",
     "migrate:dev": "prisma migrate dev --schema=prisma/schema.prisma",
     "migrate:deploy": "prisma migrate deploy --schema=prisma/schema.prisma",
