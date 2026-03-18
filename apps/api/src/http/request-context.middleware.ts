@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable, NestMiddleware } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import type { NextFunction, Request, Response } from "express";
 
 import type { Actor, RequestContext } from "@spareparts/contracts";
@@ -32,7 +33,7 @@ export class RequestContextMiddleware implements NestMiddleware {
   }
 
   private buildContextFromHeaders(req: Request): RequestContext {
-    const correlationId = req.header("x-correlation-id") ?? "";
+    const correlationId = req.header("x-correlation-id") ?? randomUUID();
 
     const kind = req.header("x-actor-kind") ?? "anonymous";
     const scope = req.header("x-scope") ?? "customer";
