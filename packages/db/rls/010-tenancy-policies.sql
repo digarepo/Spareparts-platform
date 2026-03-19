@@ -50,3 +50,74 @@ using (
   app.current_actor_kind() = 'tenant'
   and "tenantId" = app.current_tenant_id()
 );
+
+--Catalog RLS policies
+--Enable RLs on catalog tables
+alter table "Product" enable row level security;
+alter table "Product" force row level security;
+
+alter table "Variant" enable row level security;
+alter table "Variant" force row level security;
+
+alter table "Price" enable row level security;
+alter table "Price" force row level security;
+
+alter table "Inventory" enable row level security;
+alter table "Inventory" force row level security;
+
+-- Product: tenant-scoped
+drop policy if exists product_tenant_select on "Product";
+create policy product_tenant_select
+on "Product"
+for select
+using (
+  app.current_actor_kind() = 'tenant'
+  and "id" in (
+    select "id" from "Product" where "tenantId" = app.current_tenant_id()
+  )
+);
+
+--Variant: tenant-scoped via product
+drop policy if exists variant_tenant_select on "Variant";
+create policy variant_tenant_select
+on "Variant"
+for select
+using (
+  app.current_actor_kind() = 'tenant'
+  and "productId" in (
+    select "id" from "Product"
+    where "tenantId" = app.current_tenant_id();
+  )
+);
+
+-- Price: tenant-scoped via variant
+drop policy if exists price_tenant_select on "Price";
+create policy price_tenant_select
+on "Price"
+for select
+using (
+  app.current_actor_kind() = 'tenant'
+  and "variantId" in (
+    select "id" from "Variant"
+    where "productId" in (
+      select "id" from "Product"
+      where "tenantId" = app.current_tenant_id()
+    )
+  )
+);
+
+-- Inventory tenant-scoped via Variant
+drop policy if exists inventory_tenant_select on "Inventory";
+create policy inventory_tenant_select
+on "Inventory"
+for select
+using (
+  app.current_actor_kind() = 'tenant'
+  and "variantId" in (
+    select "id" from "Variant"
+    where "productId" in (
+      select "id" from "Product"
+      where "tenantId" = app.current_tenant_id()
+    )
+  )
+);
