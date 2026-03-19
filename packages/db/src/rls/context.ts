@@ -53,10 +53,10 @@ export async function applyRlsContext(client: DbSqlClient, ctx:DbRlsContext): Pr
         throw new Error('SCOPE_VIOLATION: non-tenant actorKind must not set tenantId');
     }
 
-    await client.$executeRaw`select set_config('app.actor_kind', $1, true)`, ctx.actorKind;
+    await client.$executeRaw`select set_config('app.actor_kind', ${ctx.actorKind}, true)`;
 
     if(ctx.tenantId) {
-        await client.$executeRaw`select set_config('app.tenant_id', $1, true)`, ctx.tenantId;
+        await client.$executeRaw`select set_config('app.tenant_id', ${ctx.tenantId}, true)`;
     } else {
         // ensure tenant_id is empty for non-tenant scopes to avoid stale context in long-lived sessions.
         await client.$executeRaw`select set_config('app.tenant_id', '', true)`;

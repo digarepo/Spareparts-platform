@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { RequestContext } from "@spareparts/contracts";
 
 /**
  * Represents contextual information associated with the current request.
@@ -7,23 +8,6 @@ import { AsyncLocalStorage } from "node:async_hooks";
  * using Node.js AsyncLocalStorage, allowing services and repositories
  * to access request metadata without explicitly passing parameters.
  */
-export interface RequestContext {
-  /**
-   * Tenant identifier for multi-tenant isolation.
-   */
-  tenantId: string;
-
-  /**
-   * Authenticated user identifier (if present).
-   */
-  userId?: string;
-
-  /**
-   * Unique identifier for the request used in tracing/logging.
-   */
-  requestId: string;
-}
-
 const requestContextStorage = new AsyncLocalStorage<RequestContext>();
 
 /**
@@ -36,7 +20,7 @@ const requestContextStorage = new AsyncLocalStorage<RequestContext>();
  *
  * ```ts
  * runWithRequestContext(
- *   { tenantId, userId, requestId },
+ *   { correlationId, actor, tenantId },
  *   () => controllerHandler(req, res)
  * );
  * ```

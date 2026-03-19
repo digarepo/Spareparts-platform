@@ -10,15 +10,23 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "eslint \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" --cache --no-error-on-unmatched-pattern",
-    "lint:fix": "npm run lint -- --fix",
-    "typecheck": "npm run typecheck:all",
-    "typecheck:all": "npm --workspaces --if-present run typecheck",
+    "nx": "nx",
+    "dev": "nx run-many -t dev --projects=@spareparts/storefront,@spareparts/admin-panel,@spareparts/tenant-dashboard,@spareparts/api --parallel=4",
+    "dev:storefront": "nx dev @spareparts/storefront",
+    "dev:admin-panel": "nx dev @spareparts/admin-panel",
+    "dev:tenant-dashboard": "nx dev @spareparts/tenant-dashboard",
+    "dev:api": "nx dev @spareparts/api",
+    "build": "nx run-many -t build --all",
+    "typecheck": "nx run-many -t typecheck --all",
+    "lint": "nx run-many -t lint --all",
+    "lint:fix": "nx run-many -t lint --all -- --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "build": "npm --workspaces --if-present run build",
     "clean": "git clean -fdX -e '!'",
     "prepare": "husky install"
+  },
+  "overrides": {
+    "entities": "6.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.14.5",
@@ -34,10 +42,11 @@
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/supertest": "^7.2.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "@vitejs/plugin-react": "^4.2.0",
-    "@vitest/ui": "^4.0.0",
+    "@vitest/ui": "^4.1.0",
     "ajv": "^8.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
@@ -52,10 +61,11 @@
     "lint-staged": "^15.2.2",
     "nx": "22.5.3",
     "prettier": "~3.6.2",
+    "supertest": "^7.2.2",
     "typescript": "^5.8.4",
     "vite": "^7.0.0",
     "vite-plugin-dts": "~4.5.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

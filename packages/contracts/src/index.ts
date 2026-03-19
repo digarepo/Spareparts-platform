@@ -4,3 +4,7 @@ export * from './errors';
 export * from './ids';
 export * from './scope';
 export * from './policy/tenant-context';
+export * from './catalog/identifiers';
+export * from './catalog/quantity';
+export * from './catalog/pricing';
+export * from './catalog/entities';
