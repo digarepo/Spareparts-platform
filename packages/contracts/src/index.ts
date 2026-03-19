@@ -8,3 +8,8 @@ export * from './catalog/identifiers';
 export * from './catalog/quantity';
 export * from './catalog/pricing';
 export * from './catalog/entities';
+export * from './catalog/product-state.schema';
+export * from './catalog/taxonomy.schema';
+export * from './catalog/product-mutation.request';
+export * from './catalog/variant-mutation.request';
+export * from './catalog/catalog-listing.request';
