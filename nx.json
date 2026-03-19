@@ -2,54 +2,32 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "targetDefaults": {
     "build": {
-      "dependsOn": [
-        "^build",
-        "generate"
-      ],
-      "outputs": [
-        "{projectRoot}/dist"
-      ],
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["{projectRoot}/dist"],
       "cache": true
     },
     "dev": {
-      "dependsOn": [
-        "^build",
-        "generate"
-      ]
+      "dependsOn": ["^build", "generate"]
     },
     "typecheck": {
-      "dependsOn": [
-        "^typecheck"
-      ],
+      "dependsOn": ["^typecheck"],
       "cache": true
     },
     "preview": {
-      "dependsOn": [
-        "^preview"
-      ],
+      "dependsOn": ["^preview"],
       "cache": false
     },
     "generate": {
       "cache": true
     },
     "migrate:dev": {
-      "dependsOn": [
-        "^migrate:dev"
-      ]
+      "dependsOn": ["^migrate:dev"]
     },
     "migrate:deploy": {
-      "dependsOn": [
-        "^migrate:deploy"
-      ]
+      "dependsOn": ["^migrate:deploy"]
     }
   },
   "plugins": [
-    {
-      "plugin": "@nx/eslint/plugin",
-      "options": {
-        "targetName": "lint"
-      }
-    },
     {
       "plugin": "@nx/vite/plugin",
       "options": {
@@ -72,5 +50,6 @@
         "unitTestRunner": "none"
       }
     }
-  }
+  },
+  "analytics": true
 }
