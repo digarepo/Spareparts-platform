@@ -43,6 +43,7 @@ export const TaxonomyNodeSchema = z.object({
     parentId: TaxonomyIdSchema.nullable(),
     label: z.string().min(1).max(255),
     metadata: z.record(z.string(), z.unknown().optional()),
+    isPlatformOwned: z.boolean().optional(), // Platform-level taxonomy governance
 });
 export type TaxonomyNode = z.infer<typeof TaxonomyNodeSchema>;
 
