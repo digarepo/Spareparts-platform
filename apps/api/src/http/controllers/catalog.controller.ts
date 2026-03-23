@@ -45,7 +45,7 @@ import type {
   ClassificationBulkAssignResponse,
 } from '@spareparts/contracts';
 import { CatalogService } from '../../catalog/catalog.service';
-import { TenantContext } from '@spareparts/contracts';
+import { CurrentRequest } from '../decorators/tenant-context.decorator';
 import type { RequestContext } from '@spareparts/contracts';
 
 /**
@@ -81,20 +81,10 @@ export class CatalogController {
    */
   @Post('products')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Create a new product',
-    description: 'Creates a new product within the current tenant context. Products start in draft status.'
-  })
+  @ApiOperation({ summary: 'Create a new product' })
   @ApiBody({ type: 'ProductCreateRequest' })
-  @ApiResponse({
-    status: 201,
-    description: 'Product successfully created',
-    type: 'ProductResponse'
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid request payload'
-  })
+  @ApiResponse({ status: 201, description: 'Product created successfully', type: 'ProductResponse' })
+  @ApiResponse({ status: 400, description: 'Invalid request payload' })
   @ApiResponse({
     status: 409,
     description: 'Product slug already exists in tenant'
@@ -105,38 +95,19 @@ export class CatalogController {
   })
   public async createProduct(
     @Body() request: ProductCreateRequest,
-    @TenantContext() ctx: RequestContext,
+    ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Creating product: ${request.slug} for tenant: ${ctx.tenantId}`,
     );
 
-    try {
-      const product = await this.catalogService.createProduct(request, ctx);
+    const product = await this.catalogService.createProduct(request, ctx);
 
-      this.logger.log(
-        `Product created successfully: ${product.id} for tenant: ${ctx.tenantId}`,
-      );
+    this.logger.log(
+      `Product created successfully: ${product.id} for tenant: ${ctx.tenantId}`,
+    );
 
-      return product;
-    } catch (error) {
-      this.logger.error(
-        `Failed to create product: ${request.slug} for tenant: ${ctx.tenantId}`,
-        error,
-      );
-
-      if (error instanceof ConflictException) {
-        throw error;
-      }
-
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(
-        'Failed to create product due to internal error',
-      );
-    }
+    return product;
   }
 
   /**
@@ -189,7 +160,7 @@ export class CatalogController {
   public async updateProduct(
     @Param('productId') productId: string,
     @Body() request: ProductUpdateRequest,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Updating product: ${productId} for tenant: ${ctx.tenantId}`,
@@ -293,7 +264,7 @@ export class CatalogController {
   })
   public async listProducts(
     @Query() query: CatalogListQuery,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductListResponse> {
     this.logger.log(
       `Listing products for tenant: ${ctx.tenantId} with filters: ${JSON.stringify(query)}`,
@@ -371,7 +342,7 @@ export class CatalogController {
   })
   public async publishProduct(
     @Param('productId') productId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Publishing product: ${productId} for tenant: ${ctx.tenantId}`,
@@ -444,7 +415,7 @@ export class CatalogController {
   })
   public async getProduct(
     @Param('productId') productId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Retrieving product: ${productId} for tenant: ${ctx.tenantId}`,
@@ -521,7 +492,7 @@ export class CatalogController {
   })
   public async createVariant(
     @Body() request: VariantCreateRequest,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Creating variant: ${request.sku} for product: ${request.productId} in tenant: ${ctx.tenantId}`,
@@ -608,7 +579,7 @@ export class CatalogController {
   public async updateVariant(
     @Param('variantId') variantId: string,
     @Body() request: VariantUpdateRequest,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Updating variant: ${variantId} in tenant: ${ctx.tenantId}`,
@@ -685,7 +656,7 @@ export class CatalogController {
   })
   public async getVariant(
     @Param('variantId') variantId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Retrieving variant: ${variantId} for tenant: ${ctx.tenantId}`,
@@ -751,7 +722,7 @@ export class CatalogController {
   })
   public async listVariants(
     @Param('productId') productId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ProductResponse> {
     this.logger.log(
       `Listing variants for product: ${productId} in tenant: ${ctx.tenantId}`,
@@ -805,7 +776,7 @@ export class CatalogController {
   @ApiResponse({ status: 409, description: 'Label already exists in parent scope' })
   public async createTaxonomy(
     @Body() request: TaxonomyCreateRequest,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<TaxonomyResponse> {
     this.logger.log(
       `Creating taxonomy: ${request.label} in tenant: ${ctx.tenantId}`,
@@ -860,7 +831,7 @@ export class CatalogController {
   public async updateTaxonomy(
     @Param('taxonomyId') taxonomyId: string,
     @Body() request: TaxonomyUpdateRequest,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<TaxonomyResponse> {
     this.logger.log(
       `Updating taxonomy: ${taxonomyId} in tenant: ${ctx.tenantId}`,
@@ -911,7 +882,7 @@ export class CatalogController {
   @ApiResponse({ status: 404, description: 'Taxonomy node not found' })
   public async getTaxonomy(
     @Param('taxonomyId') taxonomyId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<TaxonomyResponse> {
     this.logger.log(
       `Retrieving taxonomy: ${taxonomyId} for tenant: ${ctx.tenantId}`,
@@ -953,7 +924,7 @@ export class CatalogController {
   @ApiOperation({ summary: 'List all taxonomy nodes' })
   @ApiResponse({ status: 200, description: 'Taxonomy nodes retrieved successfully', type: 'TaxonomyListResponse' })
   public async listTaxonomies(
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<TaxonomyListResponse> {
     this.logger.log(
       `Listing taxonomies for tenant: ${ctx.tenantId}`,
@@ -1004,7 +975,7 @@ export class CatalogController {
   public async assignProductToTaxonomy(
     @Param('productId') productId: string,
     @Body() request: ClassificationAssignRequest,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ClassificationAssignmentResponse> {
     this.logger.log(
       `Assigning product ${productId} to taxonomy ${request.taxonomyId} in tenant: ${ctx.tenantId}`,
@@ -1055,7 +1026,7 @@ export class CatalogController {
   public async unassignProductFromTaxonomy(
     @Param('productId') productId: string,
     @Param('taxonomyId') taxonomyId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<{ message: string }> {
     this.logger.log(
       `Unassigning product ${productId} from taxonomy ${taxonomyId} in tenant: ${ctx.tenantId}`,
@@ -1102,7 +1073,7 @@ export class CatalogController {
   @ApiResponse({ status: 404, description: 'Product not found' })
   public async listProductClassifications(
     @Param('productId') productId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ClassificationListResponse> {
     this.logger.log(
       `Listing classifications for product ${productId} in tenant: ${ctx.tenantId}`,
@@ -1151,7 +1122,7 @@ export class CatalogController {
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   public async bulkAssignProductsToTaxonomy(
     @Body() request: ClassificationBulkAssignRequest,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<ClassificationBulkAssignResponse> {
     this.logger.log(
       `Bulk assigning ${request.assignments.length} classifications in tenant: ${ctx.tenantId}`,
@@ -1201,7 +1172,7 @@ export class CatalogController {
   @ApiResponse({ status: 404, description: 'Taxonomy node not found' })
   public async softDeleteTaxonomy(
     @Param('taxonomyId') taxonomyId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<TaxonomyResponse> {
     this.logger.log(
       `Soft deleting taxonomy: ${taxonomyId} in tenant: ${ctx.tenantId}`,
@@ -1252,7 +1223,7 @@ export class CatalogController {
   @ApiResponse({ status: 404, description: 'Taxonomy node not found' })
   public async hardDeleteTaxonomy(
     @Param('taxonomyId') taxonomyId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<{ message: string }> {
     this.logger.log(
       `Hard deleting taxonomy: ${taxonomyId} in tenant: ${ctx.tenantId}`,
@@ -1307,7 +1278,7 @@ export class CatalogController {
   @ApiResponse({ status: 404, description: 'Variant not found' })
   public async softDeleteVariant(
     @Param('variantId') variantId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<any> {
     this.logger.log(
       `Soft deleting variant: ${variantId} in tenant: ${ctx.tenantId}`,
@@ -1358,7 +1329,7 @@ export class CatalogController {
   @ApiResponse({ status: 404, description: 'Variant not found' })
   public async hardDeleteVariant(
     @Param('variantId') variantId: string,
-    @TenantContext() ctx: RequestContext,
+    @CurrentRequest() ctx: RequestContext,
   ): Promise<{ message: string }> {
     this.logger.log(
       `Hard deleting variant: ${variantId} in tenant: ${ctx.tenantId}`,

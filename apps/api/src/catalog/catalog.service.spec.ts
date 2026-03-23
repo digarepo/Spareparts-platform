@@ -15,9 +15,11 @@ describe('CatalogService', () => {
       create: vi.fn(),
       findById: vi.fn(),
       findBySlug: vi.fn(),
+      findBySku: vi.fn(),
       list: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      publish: vi.fn(),
       createVariant: vi.fn(),
       findVariantById: vi.fn(),
       findByVariantSku: vi.fn(),
@@ -73,7 +75,8 @@ describe('CatalogService', () => {
           slug: productRequest.slug,
           description: productRequest.description,
           status: 'draft' as const,
-          tenantId: 'test-tenant-id',
+          tags: [],
+          taxonomyIds: [],
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -85,7 +88,11 @@ describe('CatalogService', () => {
         const result = await service.createProduct(productRequest, mockContext);
 
         // Assert
-        expect(result).toEqual(expectedProduct);
+        expect(result).toEqual({
+          ...expectedProduct,
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        });
         expect(repository.findBySlug).toHaveBeenCalledWith('test-product', 'test-tenant-id');
         expect(repository.create).toHaveBeenCalledWith({
           ...productRequest,
@@ -152,6 +159,8 @@ describe('CatalogService', () => {
           sku: 'TEST-001',
           status: 'draft',
           tenantId: 'test-tenant-id',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
 
         const updatedProduct = {
@@ -168,7 +177,17 @@ describe('CatalogService', () => {
         const result = await service.updateProduct(productId, updateRequest, mockContext);
 
         // Assert
-        expect(result).toEqual(updatedProduct);
+        expect(result).toEqual({
+          id: productId,
+          name: 'Updated Product',
+          slug: undefined,
+          description: 'Updated Description',
+          status: 'draft',
+          tags: [],
+          taxonomyIds: [],
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        });
         expect(repository.findById).toHaveBeenCalledWith(productId, 'test-tenant-id');
         expect(repository.update).toHaveBeenCalledWith(productId, updateRequest, mockContext);
       });
@@ -197,26 +216,37 @@ describe('CatalogService', () => {
           status: 'draft',
           slug: 'test-product',
           tenantId: 'test-tenant-id',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
 
         const publishedProduct = {
           ...existingProduct,
           status: 'published',
           publishedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
 
         vi.spyOn(repository, 'findById').mockResolvedValue(existingProduct);
-        vi.spyOn(repository, 'update').mockResolvedValue(publishedProduct);
+        vi.spyOn(repository, 'publish').mockResolvedValue(publishedProduct);
 
         // Act
         const result = await service.publishProduct(productId, mockContext);
 
         // Assert
-        expect(result).toEqual(publishedProduct);
-        expect(repository.update).toHaveBeenCalledWith(productId, {
+        expect(result).toEqual({
+          id: productId,
+          name: 'Test Product',
+          slug: 'test-product',
           status: 'published',
-          publishedAt: expect.any(Date),
-        }, mockContext);
+          description: undefined,
+          tags: [],
+          taxonomyIds: [],
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        });
+        expect(repository.publish).toHaveBeenCalledWith(productId, mockContext);
       });
 
       it('should throw BadRequestException when product is already published', async () => {
@@ -234,7 +264,7 @@ describe('CatalogService', () => {
 
         // Act & Assert
         await expect(service.publishProduct(productId, mockContext))
-          .rejects.toThrow(BadRequestException);
+          .rejects.toThrow(ConflictException);
       });
     });
   });
@@ -405,10 +435,12 @@ describe('CatalogService', () => {
         expect(repository.findById).toHaveBeenCalledWith(productId, 'test-tenant-id');
         expect(repository.findTaxonomyById).toHaveBeenCalledWith('test-taxonomy-id', 'test-tenant-id');
         expect(repository.createClassificationAssignment).toHaveBeenCalledWith(
-          productId,
-          'test-taxonomy-id',
-          'test-tenant-id',
-          mockContext
+          {
+            productId,
+            taxonomyId: 'test-taxonomy-id',
+            tenantId: 'test-tenant-id',
+          },
+          mockContext,
         );
       });
 

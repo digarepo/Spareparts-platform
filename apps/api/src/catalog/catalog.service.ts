@@ -1,26 +1,44 @@
 import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import type {
-  ProductCreateRequest,
-  ProductUpdateRequest,
+  RequestContext,
   ProductResponse,
   ProductListResponse,
-  CatalogListQuery,
-  RequestContext,
-  ProductStatus,
-  ProductId,
-  VariantCreateRequest,
-  VariantUpdateRequest,
-  TaxonomyCreateRequest,
-  TaxonomyUpdateRequest,
   TaxonomyResponse,
   TaxonomyListResponse,
-  ClassificationAssignRequest,
-  ClassificationUnassignRequest,
   ClassificationAssignmentResponse,
   ClassificationListResponse,
+  VariantResponse,
+  VariantListResponse,
+  ProductCreateRequest,
+  ProductUpdateRequest,
+  TaxonomyCreateRequest,
+  TaxonomyUpdateRequest,
+  VariantCreateRequest,
+  VariantUpdateRequest,
+  ClassificationAssignRequest,
   ClassificationBulkAssignRequest,
-  ClassificationBulkAssignResponse,
+  CatalogFilterCriteria,
+  ProductId,
+  TaxonomyId,
+  VariantId,
+  ProductStatus
 } from '@spareparts/contracts';
+
+// Database entity types
+interface ProductEntity {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  status: string;
+  tenantId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt?: Date;
+  tags?: string[];
+  taxonomyIds?: string[];
+}
+
 import { CatalogRepository } from './catalog.repository';
 import { applyCatalogFilters, validateCatalogFilters } from '../../../../domains/catalog/filters/catalog-listing';
 import { generateProductSlug } from '../../../../domains/catalog/functions/slug-generation';
@@ -330,7 +348,7 @@ export class CatalogService {
   private validateStatusTransition(
     fromStatus: ProductStatus,
     toStatus: ProductStatus,
-    product: any,
+    product: ProductEntity,
   ): void {
     // No change in status
     if (fromStatus === toStatus) {
@@ -372,7 +390,7 @@ export class CatalogService {
    * - Includes computed visibility flags
    * - Filters sensitive internal fields
    */
-  private mapToProductResponse(product: any): ProductResponse {
+  private mapToProductResponse(product: ProductEntity): ProductResponse {
     return {
       id: product.id,
       name: product.name,
@@ -666,7 +684,7 @@ export class CatalogService {
         }
 
         // Validate no cycles (parent cannot be descendant of current node)
-        if (await this.catalogRepository.isTaxonomyDescendant(request.parentId, taxonomyId, tenantId)) {
+        if (await this.catalogRepository.isTaxonomyDescendant(request.parentId, taxonomyId, ctx)) {
           throw new BadRequestException(
             'Cannot set parent: would create a cycle in taxonomy hierarchy',
           );
@@ -766,7 +784,7 @@ export class CatalogService {
     );
 
     const tenantId = this.requireTenantId(ctx);
-    const taxonomies = await this.catalogRepository.listTaxonomies(tenantId);
+    const taxonomies = await this.catalogRepository.listTaxonomies(ctx);
 
     this.logger.debug(
       `Listed ${taxonomies.length} taxonomies for tenant: ${ctx.tenantId!}`,
@@ -833,9 +851,11 @@ export class CatalogService {
     }
 
     const assignment = await this.catalogRepository.createClassificationAssignment(
-      productId,
-      request.taxonomyId,
-      tenantId,
+      {
+        productId,
+        taxonomyId: request.taxonomyId,
+        tenantId,
+      },
       ctx,
     );
 
@@ -882,7 +902,7 @@ export class CatalogService {
       );
     }
 
-    await this.catalogRepository.deleteClassificationAssignment(assignment.id, tenantId);
+    await this.catalogRepository.deleteClassificationAssignment(productId, taxonomyId, ctx);
 
     this.logger.debug(
       `Classification assignment removed: product ${productId} from taxonomy ${taxonomyId} in tenant: ${ctx.tenantId!}`,
@@ -922,7 +942,7 @@ export class CatalogService {
 
     const assignments = await this.catalogRepository.listClassificationAssignments(
       productId,
-      tenantId,
+      ctx,
     );
 
     this.logger.debug(
