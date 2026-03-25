@@ -71,3 +71,18 @@ export const ProductListResponseSchema = z.object({
   products: z.array(ProductResponseSchema),
 });
 export type ProductListResponse = z.infer<typeof ProductListResponseSchema>;
+
+// Variant response schemas
+export const VariantResponseSchema = VariantSchema;
+export type VariantResponse = z.infer<typeof VariantResponseSchema>;
+
+export const VariantListResponseSchema = z.object({
+  data: z.array(VariantResponseSchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+export type VariantListResponse = z.infer<typeof VariantListResponseSchema>;

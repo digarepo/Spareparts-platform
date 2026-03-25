@@ -66,3 +66,14 @@ export const CatalogListQuerySchema = z.object({
   filter: CatalogFilterSchema,
 });
 export type CatalogListQuery = z.infer<typeof CatalogListQuerySchema>;
+
+// Domain-level filter criteria (used by repository layer)
+export interface CatalogFilterCriteria {
+  status: ProductStatus;
+  taxonomyIds?: Set<TaxonomyId>;
+  searchText?: string;
+  pagination: {
+    offset: number;
+    limit: number;
+  };
+}

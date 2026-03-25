@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CatalogController } from './catalog.controller';
 import { CatalogService } from '../../catalog/catalog.service';
+import { Logger } from '@nestjs/common';
 import { NotFoundException, ConflictException, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import type { RequestContext, ProductCreateRequest, TaxonomyCreateRequest, ClassificationAssignRequest, ProductUpdateRequest, VariantCreateRequest, VariantUpdateRequest, ClassificationBulkAssignRequest } from '@spareparts/contracts';
 
@@ -10,8 +11,12 @@ describe('CatalogController', () => {
   let mockContext: RequestContext;
 
   beforeEach(() => {
-    // Mock service with all required methods
+    // Mock service with all required methods and properties
     service = {
+      catalogRepository: {} as any,
+      requireTenantId: vi.fn().mockReturnValue('test-tenant-id'),
+      validateStatusTransition: vi.fn(),
+      mapToProductResponse: vi.fn(),
       createProduct: vi.fn(),
       updateProduct: vi.fn(),
       getProduct: vi.fn(),
@@ -30,13 +35,13 @@ describe('CatalogController', () => {
       listProductClassifications: vi.fn(),
       bulkAssignProductsToTaxonomy: vi.fn(),
       softDeleteTaxonomy: vi.fn(),
-      hardDeleteTaxonomy: vi.fn(),
+      hardDeleteTaxonomy: vi.fn().mockResolvedValue(undefined),
       softDeleteVariant: vi.fn(),
-      hardDeleteVariant: vi.fn(),
-    };
+      hardDeleteVariant: vi.fn().mockResolvedValue(undefined),
+    } as any;
 
     // Create controller directly (this works as proven by our simple test)
-    controller = new CatalogController(service);
+    controller = new CatalogController(service as CatalogService);
 
     // Mock context
     mockContext = {
@@ -216,7 +221,7 @@ describe('CatalogController', () => {
         const variantRequest: VariantCreateRequest = {
           productId: 'test-product-id',
           sku: 'TEST-SKU-001',
-          price: 1999,
+          name: 'Test Variant',
           attributes: { color: 'red', size: 'M' },
         };
 
@@ -294,6 +299,7 @@ describe('CatalogController', () => {
         // Arrange
         const productId = 'test-product-id';
         const assignRequest: ClassificationAssignRequest = {
+          productId: 'test-product-id',
           taxonomyId: 'test-taxonomy-id',
         };
 
@@ -320,6 +326,7 @@ describe('CatalogController', () => {
         // Arrange
         const productId = 'test-product-id';
         const assignRequest: ClassificationAssignRequest = {
+          productId: 'test-product-id',
           taxonomyId: 'test-taxonomy-id',
         };
 
@@ -422,7 +429,7 @@ describe('CatalogController', () => {
           },
         };
 
-        vi.spyOn(service, 'hardDeleteTaxonomy').mockResolvedValue({ message: 'Taxonomy node hard deleted successfully' });
+        vi.spyOn(service, 'hardDeleteTaxonomy').mockResolvedValue(undefined);
 
         // Act
         const result = await controller.hardDeleteTaxonomy(taxonomyId, platformContext);
@@ -478,7 +485,7 @@ describe('CatalogController', () => {
           },
         };
 
-        vi.spyOn(service, 'hardDeleteVariant').mockResolvedValue({ message: 'Variant hard deleted successfully' });
+        vi.spyOn(service, 'hardDeleteVariant').mockResolvedValue(undefined);
 
         // Act
         const result = await controller.hardDeleteVariant(variantId, platformContext);

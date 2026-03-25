@@ -130,8 +130,6 @@ export function getDescendantIds(
  * @throws Error when cycles or orphaned nodes are detected
  */
 export function validateTaxonomyStructure(nodes: TaxonomyNode[]): boolean {
-  const nodeIds = new Set(nodes.map(n => n.id));
-
   // Check for orphaned children
   const roots = nodes.filter(n => n.parentId === null);
   for (const root of roots) {

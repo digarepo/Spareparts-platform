@@ -58,8 +58,8 @@ describe('Catalog Contracts Validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues).toHaveLength(1);
-        expect(result.error.issues[0].path).toContain('name');
-        expect(result.error.issues[0].message).toContain('Too small');
+        expect(result.error.issues[0]?.path).toContain('name');
+        expect(result.error.issues[0]?.message).toContain('Too small');
       }
     });
 
@@ -82,8 +82,8 @@ describe('Catalog Contracts Validation', () => {
       // Assert
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('slug');
-        expect(result.error.issues[0].message).toContain('Too big');
+        expect(result.error.issues[0]?.path).toContain('slug');
+        expect(result.error.issues[0]?.message).toContain('Too big');
       }
     });
   });
@@ -201,7 +201,7 @@ describe('Catalog Contracts Validation', () => {
       // Assert
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('parentId');
+        expect(result.error.issues[0]?.path).toContain('parentId');
       }
     });
   });
@@ -288,7 +288,7 @@ describe('Catalog Contracts Validation', () => {
       // Assert
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('productId');
+        expect(result.error.issues[0]?.path).toContain('productId');
       }
     });
 
@@ -308,7 +308,7 @@ describe('Catalog Contracts Validation', () => {
       // Assert
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('taxonomyId');
+        expect(result.error.issues[0]?.path).toContain('taxonomyId');
       }
     });
   });
@@ -341,8 +341,8 @@ describe('Catalog Contracts Validation', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.assignments).toHaveLength(2);
-        expect(result.data.assignments[0].productId).toBe('01HXYKJ2R5E4X2Y3Z4A5B6C7D');
-        expect(result.data.assignments[1].productId).toBe('01HXYKJ2R5E4X2Y3Z4A5B6C7F');
+        expect(result.data?.assignments[0]?.productId).toBe('01HXYKJ2R5E4X2Y3Z4A5B6C7D');
+        expect(result.data?.assignments[1]?.productId).toBe('01HXYKJ2R5E4X2Y3Z4A5B6C7F');
       }
     });
 
@@ -363,8 +363,8 @@ describe('Catalog Contracts Validation', () => {
       // Assert
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('assignments');
-        expect(result.error.issues[0].message).toContain('minimum');
+        expect(result.error.issues[0]?.path).toContain('assignments');
+        expect(result.error.issues[0]?.message).toContain('minimum');
       }
     });
 
@@ -395,7 +395,7 @@ describe('Catalog Contracts Validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues).toHaveLength(1);
-        expect(result.error.issues[0].path).toEqual(['assignments', 1, 'productId']);
+        expect(result.error.issues[0]?.path).toEqual(['assignments', 1, 'productId']);
       }
     });
   });

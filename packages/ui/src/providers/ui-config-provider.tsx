@@ -276,4 +276,5 @@ export function UIConfigProvider({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const useUIStyle = () => useContext(UIConfigContext);

@@ -22,7 +22,6 @@ import type {
   TaxonomyId,
   VariantId
 } from '@spareparts/contracts';
-import { CatalogRepository } from './catalog.repository.interface';
 import { getTenantPrismaClient } from '../prisma/tenant-prisma.client';
 
 // Database entity types
@@ -31,7 +30,7 @@ interface ProductEntity {
   name: string;
   slug: string;
   description?: string;
-  status: string;
+  status: 'draft' | 'published' | 'inactive';
   tenantId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -43,7 +42,7 @@ interface ProductEntity {
 interface TaxonomyEntity {
   id: string;
   label: string;
-  parentId?: string;
+  parentId: string | null;
   tenantId?: string;
   isPlatformOwned?: boolean;
   metadata?: Record<string, any>;
@@ -64,6 +63,7 @@ interface VariantEntity {
   id: string;
   productId: string;
   sku: string;
+  name: string;
   attributes: Record<string, any>;
   price?: number;
   quantity?: number;
@@ -155,9 +155,9 @@ export class CatalogRepository {
 
     // Handle publishedAt timestamp for status changes
     let publishedAtUpdate = {};
-    if (updateData.status === 'published' && updateData.status !== undefined) {
+    if (updateData.status === 'published') {
       publishedAtUpdate = { publishedAt: new Date() };
-    } else if (updateData.status !== 'published' && updateData.status !== undefined) {
+    } else if (updateData.status && ['draft', 'inactive'].includes(updateData.status)) {
       publishedAtUpdate = { publishedAt: null };
     }
 
@@ -300,47 +300,6 @@ export class CatalogRepository {
     return variant;
   }
 
-  /**
-   * Publishes a product (updates status to 'published').
-   *
-   * @param productId - Product ID to publish
-   * @param ctx - Request context with tenant information
-   * @returns The updated product entity
-   *
-   * @remarks
-   * - Validates product exists in tenant
-   * - Updates product status to 'published'
-   * - Uses tenant-scoped Prisma client with RLS
-   */
-  async publish(
-    productId: string,
-    ctx: RequestContext,
-  ): Promise<any> {
-    this.logger.debug(
-      `Publishing product: ${productId} for tenant: ${ctx.tenantId}`,
-    );
-
-    const prisma = getTenantPrismaClient(ctx);
-
-    const product = await (prisma as any).product.update({
-      where: { id: productId },
-      data: { status: 'published' },
-      include: {
-        variants: {
-          include: {
-            price: true,
-            quantity: true,
-          },
-        },
-      },
-    });
-
-    this.logger.debug(
-      `Product published: ${productId} for tenant: ${ctx.tenantId}`,
-    );
-
-    return product;
-  }
 
   /**
    * Lists products with filtering and pagination.
@@ -1256,8 +1215,8 @@ export class CatalogRepository {
       description: product.description,
       tags: product.tags || [],
       taxonomyIds: product.taxonomyIds || [],
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
     };
   }
 
@@ -1276,7 +1235,7 @@ export class CatalogRepository {
       id: taxonomy.id,
       parentId: taxonomy.parentId,
       label: taxonomy.label,
-      metadata: taxonomy.metadata,
+      metadata: taxonomy.metadata || {},
       isPlatformOwned: taxonomy.isPlatformOwned,
     };
   }
@@ -1370,10 +1329,6 @@ export class CatalogRepository {
       sku: variant.sku,
       name: variant.name,
       attributes: variant.attributes,
-      price: variant.price,
-      quantity: variant.quantity,
-      createdAt: variant.createdAt,
-      updatedAt: variant.updatedAt,
     };
   }
 

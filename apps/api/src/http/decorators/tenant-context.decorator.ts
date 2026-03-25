@@ -9,6 +9,7 @@ import type { RequestContext } from "@spareparts/contracts";
  * - **Authority:** middleware pipeline
  * - **Invariants:** request context is always validated before reaching handlers
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const CurrentRequest = createParamDecorator(
     (data: unknown, ctx: ExecutionContext): RequestContext => {
         const request = ctx.switchToHttp().getRequest();

@@ -75,6 +75,7 @@ describe('CatalogService', () => {
           slug: productRequest.slug,
           description: productRequest.description,
           status: 'draft' as const,
+          tenantId: mockContext.tenantId!,
           tags: [],
           taxonomyIds: [],
           createdAt: new Date(),
@@ -89,16 +90,20 @@ describe('CatalogService', () => {
 
         // Assert
         expect(result).toEqual({
-          ...expectedProduct,
+          id: expectedProduct.id,
+          name: expectedProduct.name,
+          slug: expectedProduct.slug,
+          description: expectedProduct.description,
+          status: expectedProduct.status,
+          tags: expectedProduct.tags,
+          taxonomyIds: expectedProduct.taxonomyIds,
           createdAt: expect.any(String),
           updatedAt: expect.any(String),
         });
-        expect(repository.findBySlug).toHaveBeenCalledWith('test-product', 'test-tenant-id');
+        expect(repository.findBySlug).toHaveBeenCalledWith(productRequest.slug, mockContext.tenantId!);
         expect(repository.create).toHaveBeenCalledWith({
           ...productRequest,
-          slug: 'test-product',
-          status: 'draft',
-          tenantId: 'test-tenant-id',
+          tenantId: mockContext.tenantId!,
         }, mockContext);
       });
 
@@ -156,6 +161,7 @@ describe('CatalogService', () => {
         const existingProduct = {
           id: productId,
           name: 'Test Product',
+          slug: 'test-product',
           sku: 'TEST-001',
           status: 'draft',
           tenantId: 'test-tenant-id',
@@ -166,6 +172,7 @@ describe('CatalogService', () => {
         const updatedProduct = {
           ...existingProduct,
           ...updateRequest,
+          status: 'draft' as const,
           updatedAt: new Date(),
         };
 
@@ -180,7 +187,7 @@ describe('CatalogService', () => {
         expect(result).toEqual({
           id: productId,
           name: 'Updated Product',
-          slug: undefined,
+          slug: 'test-product',
           description: 'Updated Description',
           status: 'draft',
           tags: [],
@@ -294,7 +301,13 @@ describe('CatalogService', () => {
         const result = await service.createTaxonomy(taxonomyRequest, mockContext);
 
         // Assert
-        expect(result).toEqual(expectedTaxonomy);
+        expect(result).toEqual({
+          id: 'test-taxonomy-id',
+          parentId: null,
+          label: 'Test Category',
+          metadata: {},
+          isPlatformOwned: undefined,
+        });
         expect(repository.findTaxonomyByLabelAndParent).toHaveBeenCalledWith(
           'Test Category',
           null,
@@ -350,6 +363,8 @@ describe('CatalogService', () => {
           parentId: null,
           tenantId: 'test-tenant-id',
           isPlatformOwned: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
 
         const updatedTaxonomy = {
@@ -366,7 +381,13 @@ describe('CatalogService', () => {
         const result = await service.updateTaxonomy(taxonomyId, updateRequest, mockContext);
 
         // Assert
-        expect(result).toEqual(updatedTaxonomy);
+        expect(result).toEqual({
+          id: 'test-taxonomy-id',
+          parentId: null,
+          label: 'Updated Category',
+          metadata: {},
+          isPlatformOwned: false,
+        });
       });
 
       it('should throw ForbiddenException when non-platform operator tries to modify platform-owned taxonomy', async () => {
@@ -438,9 +459,8 @@ describe('CatalogService', () => {
           {
             productId,
             taxonomyId: 'test-taxonomy-id',
-            tenantId: 'test-tenant-id',
           },
-          mockContext,
+          mockContext
         );
       });
 

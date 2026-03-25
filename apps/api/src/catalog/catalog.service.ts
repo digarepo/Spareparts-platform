@@ -7,6 +7,7 @@ import type {
   TaxonomyListResponse,
   ClassificationAssignmentResponse,
   ClassificationListResponse,
+  ClassificationBulkAssignResponse,
   VariantResponse,
   VariantListResponse,
   ProductCreateRequest,
@@ -18,6 +19,7 @@ import type {
   ClassificationAssignRequest,
   ClassificationBulkAssignRequest,
   CatalogFilterCriteria,
+  CatalogListQuery,
   ProductId,
   TaxonomyId,
   VariantId,
@@ -30,13 +32,24 @@ interface ProductEntity {
   name: string;
   slug: string;
   description?: string;
-  status: string;
+  status: 'draft' | 'published' | 'inactive';
   tenantId: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
   tags?: string[];
   taxonomyIds?: string[];
+}
+
+interface TaxonomyEntity {
+  id: string;
+  label: string;
+  parentId: string | null;
+  tenantId?: string;
+  isPlatformOwned?: boolean;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 import { CatalogRepository } from './catalog.repository';
@@ -370,7 +383,17 @@ export class CatalogService {
 
     // Additional validation for publishing
     if (toStatus === 'published') {
-      const canPublish = canPublishProduct(product);
+      const canPublish = canPublishProduct({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        status: product.status,
+        description: product.description,
+        tags: product.tags || [],
+        taxonomyIds: product.taxonomyIds || [],
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString(),
+      });
       if (!canPublish) {
         throw new BadRequestException(
           'Product cannot be published: missing required data or invalid state',
@@ -498,7 +521,7 @@ export class CatalogService {
       }
     }
 
-    const updatedVariant = await this.catalogRepository.updateVariant(variantId, request, ctx);
+    await this.catalogRepository.updateVariant(variantId, request, ctx);
 
     this.logger.debug(
       `Variant updated: ${variantId} in tenant: ${ctx.tenantId!}`,
@@ -636,7 +659,13 @@ export class CatalogService {
       `Taxonomy created: ${taxonomy.id} in tenant: ${ctx.tenantId!}`,
     );
 
-    return taxonomy;
+    return {
+      id: taxonomy.id,
+      parentId: taxonomy.parentId,
+      label: taxonomy.label,
+      metadata: taxonomy.metadata || {},
+      isPlatformOwned: taxonomy.isPlatformOwned,
+    };
   }
 
   /**
@@ -728,7 +757,13 @@ export class CatalogService {
       `Taxonomy updated: ${taxonomyId} in tenant: ${ctx.tenantId!}`,
     );
 
-    return updatedTaxonomy;
+    return {
+      id: updatedTaxonomy.id,
+      parentId: updatedTaxonomy.parentId,
+      label: updatedTaxonomy.label,
+      metadata: updatedTaxonomy.metadata || {},
+      isPlatformOwned: updatedTaxonomy.isPlatformOwned,
+    };
   }
 
   /**
@@ -764,7 +799,13 @@ export class CatalogService {
       `Taxonomy retrieved: ${taxonomyId} for tenant: ${ctx.tenantId!}`,
     );
 
-    return taxonomy;
+    return {
+      id: taxonomy.id,
+      parentId: taxonomy.parentId,
+      label: taxonomy.label,
+      metadata: taxonomy.metadata || {},
+      isPlatformOwned: taxonomy.isPlatformOwned,
+    };
   }
 
   /**
@@ -854,7 +895,6 @@ export class CatalogService {
       {
         productId,
         taxonomyId: request.taxonomyId,
-        tenantId,
       },
       ctx,
     );
@@ -891,6 +931,7 @@ export class CatalogService {
 
     const tenantId = this.requireTenantId(ctx);
 
+    // Check if assignment exists
     const assignment = await this.catalogRepository.findClassificationAssignment(
       productId,
       taxonomyId,

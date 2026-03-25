@@ -6,7 +6,7 @@ import { AppModule } from '../src/app.module';
 
 describe('Catalog API E2E Tests', () => {
   let app: INestApplication;
-  let server: any;
+  let server: ReturnType<typeof app.getHttpServer>;
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({

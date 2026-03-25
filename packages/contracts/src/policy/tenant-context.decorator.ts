@@ -26,6 +26,7 @@ import type { RequestContext } from '../context';
  * - Used by controllers to enforce tenant isolation
  * - This decorator assumes the middleware stores context on the request
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const TenantContext = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): RequestContext => {
     const request = ctx.switchToHttp().getRequest();
