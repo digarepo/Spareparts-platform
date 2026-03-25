@@ -7,62 +7,302 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/**
- * Represents a tenant (merchant/organization) boundary.
- *
- * Notes:
- * - Most tenant-scoped tables reference `tenantId`.
- * - This model itself is platform-scoped (not filtered by tenant RLS).
- */
+/// *
+///  * Represents a tenant (merchant/organization) boundary.
+///  *
+///  * Notes:
+///  * - Most tenant-scoped tables reference `tenantId`.
+///  * - This model itself is platform-scoped (not filtered by tenant RLS).
 model Tenant {
-  id        String   @id
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          String             @id
+  name        String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  products    Product[]
   memberships TenantMembership[]
 }
 
-/**
- * Represents an authenticated principal.
- *
- * Notes:
- * - This is identity-level, not tenancy-level.
- * - Tenancy linkage is represented via `TenantMembership`.
- */
+/// *
+///  * Represents an authenticated principal.
+///  *
+///  * Notes:
+///  * - This is identity-level, not tenancy-level.
+///  * - Tenancy linkage is represented via `TenantMembership`.
 model User {
-  id        String   @id
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          String             @id
+  email       String             @unique
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   memberships TenantMembership[]
 }
 
-/**
- * Links a user to a tenant.
- *
- * Notes:
- * - `roleKey` is intentionally a simple string placeholder until Phase 3 IAM.
- * - RLS should enforce that tenant-scoped access is filtered by tenant context.
- */
+/// *
+///  * Links a user to a tenant.
+///  *
+///  * Notes:
+///  * - `roleKey` is intentionally a simple string placeholder until Phase 3 IAM.
+///  * - RLS should enforce that tenant-scoped access is filtered by tenant context.
 model TenantMembership {
-  tenantId String
-  userId   String
-
-  /**
-   * Placeholder role key (non-authoritative until IAM).
-   *
-   * Examples: "TENANT_ADMIN", "SALES"
-   */
-  roleKey String?
-
+  tenantId  String
+  userId    String
+  /// *
+  ///    * Placeholder role key (non-authoritative until IAM).
+  ///    *
+  ///    * Examples: "TENANT_ADMIN", "SALES"
+  roleKey   String?
   createdAt DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([tenantId, userId])
   @@index([tenantId])
   @@index([userId])
+}
+
+/// *
+///  * Represents a product within a tenant's catalog.
+///  *
+///  * Notes:
+///  * - `status` uses string codes (not DB enums) per blueprint requirements
+///  * - `slug` is unique per tenant for URL-friendly identifiers
+///  * - `publishedAt` tracks when product became visible
+model Product {
+  id             String                 @id
+  tenantId       String
+  /// *
+  ///    * Product state: "draft", "published", or "inactive"
+  ///    *
+  ///    * Notes:
+  ///    * - String-based codes allow flexibility vs DB enums
+  ///    * - Will have FK to product_status lookup table (DB-24)
+  status         String                 @default("draft")
+  /// *
+  ///    * URL-friendly identifier for the product.
+  ///    *
+  ///    * Notes:
+  ///    * - Unique per tenant for SEO-friendly URLs
+  ///    * - Must match ProductSlug contract validation
+  slug           String
+  /// *
+  ///     * Product display name.
+  name           String
+  description    String?
+  /// *
+  ///    * Timestamp when product was first published.
+  ///    *
+  ///    * Notes:
+  ///    * - Null for draft/inactive products
+  ///    * - Set on first transition to published
+  publishedAt    DateTime?
+  /// *
+  ///    * Standard audit timestamps.
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  statusRelation ProductStatus          @relation(fields: [status], references: [code])
+  tenant         Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  statusHistory  ProductStatusHistory[]
+  taxonomy       ProductTaxonomy[]
+  variants       Variant[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, slug])
+  @@index([tenantId, publishedAt])
+}
+
+/// *
+///  * Represents a product variant (SKU, pricing, inventory).
+///  *
+///  * Notes:
+///  * - SKU is unique per tenant
+///  * - Attributes stored as JSON for flexibility
+model Variant {
+  id          String   @id
+  productId   String
+  tenantId    String
+  /// *
+  ///    * Stock Keeping Unit - unique identifier for the variant.
+  ///    *
+  ///    * Notes:
+  ///    * - Unique per tenant for inventory tracking
+  ///    * - Human-readable vs internal ID
+  sku         String
+  /// *
+  ///    * Variant display name.
+  name        String
+  /// *
+  ///    * Detailed variant description.
+  description String?
+  /// *
+  ///    * Variant-defining attributes (color, size, etc.).
+  ///    *
+  ///    * Notes:
+  ///    * - JSON for schema flexibility
+  ///    * - Should align with Variant attributes contract
+  attributes  Json?
+  /// *
+  ///    * Standard audit timestamps.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, sku])
+  @@index([productId])
+}
+
+/// *
+///  * Represents taxonomy nodes for product classification.
+///  *
+///  * Notes:
+///  * - Hierarchical structure via self-referencing parent
+///  * - Platform-owned but tenant-participated
+///  * - Descriptive-only, not authoritative for product identity
+model Taxonomy {
+  id        String            @id
+  /// *
+  ///    * Parent node for hierarchical structure.
+  ///    *
+  ///    * Notes:
+  ///    * - Null for root nodes
+  ///    * - Enforces acyclic tree structure
+  parentId  String?
+  /// *
+  ///    * Display label for the taxonomy node.
+  label     String
+  /// *
+  ///    * Ordering among siblings.
+  sortOrder Int?
+  /// *
+  ///    * Metadata for taxonomy node (config, rules, etc.).
+  metadata  Json?
+  /// *
+  ///    * Standard audit timestamps.
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  products  ProductTaxonomy[]
+  parent    Taxonomy?         @relation("TaxonomyHierarchy", fields: [parentId], references: [id])
+  children  Taxonomy[]        @relation("TaxonomyHierarchy")
+
+  @@index([parentId])
+  @@index([sortOrder])
+}
+
+/// *
+///  * Join table for product-taxonmy classification.
+///  *
+///  * Notes:
+///    * Enables many-to-many product-category relationships
+///  * - Enforces tenant-scoped classification
+///  * - Tracks when product was classified
+model ProductTaxonomy {
+  productId  String
+  taxonomyId String
+  tenantId   String
+  /// *
+  ///    * When this classification was created.
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  taxonomy   Taxonomy @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+
+  @@id([productId, taxonomyId])
+  @@index([tenantId, productId])
+  @@index([tenantId, taxonomyId])
+}
+
+/// *
+///  * Lookup table for product status codes.
+///  *
+///  * Notes:
+///  * - String-based status codes per blueprint
+///  * - Supports governance without DB enums
+///  * - Platform-owned, tenant-used
+model ProductStatus {
+  code        String    @id
+  /// *
+  ///    * Human-readable status label.
+  label       String
+  /// *
+  ///    * Description of status behavior.
+  description String?
+  /// *
+  ///    * Whether products with this status are publicly visible.
+  isPublic    Boolean   @default(false)
+  /// *
+  ///    * Whether products with this status can be ordered.
+  isOrderable Boolean   @default(false)
+  /// *
+  ///    * Display order in UI.
+  sortOrder   Int?
+  /// *
+  ///    * Standard audit timestamps.
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+/// *
+///  * Audit trail for product-taxonmy assignments.
+///  *
+///  * Notes:
+///  * - Tracks when products are classified/unclassified
+///  * - Supports governance and analytics
+///  * - Tenant-scoped for isolation
+model ProductTaxonomyHistory {
+  id         String   @id
+  productId  String
+  taxonomyId String
+  tenantId   String
+  /// *
+  ///    * Action type: assign or unassign.
+  action     String
+  /// *
+  ///    * Who made the change.
+  changedBy  String?
+  /// *
+  ///    * Actor type.
+  actorType  String   @default("user")
+  /// *
+  ///    * Reason for the change.
+  reason     String?
+  /// *
+  ///    * When the change occurred.
+  changedAt  DateTime @default(now())
+
+  @@index([tenantId, productId])
+  @@index([tenantId, taxonomyId])
+  @@index([tenantId, changedAt])
+}
+
+/// *
+///  * Audit trail for product publication status changes.
+///  *
+///  * Notes:
+///  * - Tracks all status transitions
+///  * - Enables audit and rollback capabilities
+///  * - Tenant-scoped for isolation
+model ProductStatusHistory {
+  id             String   @id
+  productId      String
+  tenantId       String
+  /// *
+  ///    * Previous status (null for initial creation).
+  previousStatus String?
+  /// *
+  ///    * New status after transition.
+  newStatus      String
+  /// *
+  ///    * Who made the change (user ID or system).
+  changedBy      String?
+  /// *
+  ///    * Actor type: user, system, migration, etc.
+  actorType      String   @default("user")
+  /// *
+  ///    * Reason for the status change.
+  reason         String?
+  /// *
+  ///    * When the change occurred.
+  changedAt      DateTime @default(now())
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, productId])
+  @@index([tenantId, changedAt])
 }

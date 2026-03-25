@@ -47,6 +47,7 @@ export type ApiError = z.infer<typeof ApiErrorSchema>;
  * @remarks
  *  - Prefer this envelope for external HTTP APIs so clients have uniform handling.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
     z.discriminatedUnion('ok', [
         z.object({

@@ -27,6 +27,9 @@ export class RequestContextMiddleware implements NestMiddleware {
   use(req: Request, _res: Response, next: NextFunction): void {
     const ctx = this.buildContextFromHeaders(req);
 
+    // Attach context to request for decorator access
+    req.context = ctx;
+
     runWithRequestContext(ctx, () => {
       next();
     });
