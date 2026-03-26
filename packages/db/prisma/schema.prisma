@@ -306,3 +306,153 @@ model ProductStatusHistory {
   @@index([tenantId, productId])
   @@index([tenantId, changedAt])
 }
+
+/// *
+///  * Represents a global principal (who).
+///  *
+///  * Notes:
+///  * - Scope-agnostic by design
+///  * - Never contains tenant-specific information
+///  * - Email must be globally unique where applicable
+model Identity {
+  id                  String              @id
+  email               String              @unique
+  lifecycleStatusCode String              @default("active")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  passwordCredentials PasswordCredential[]
+  accounts            Account[]
+  sessions            Session[]
+}
+
+/// *
+///  * Represents scope-bound participation (where/how).
+///  *
+///  * Notes:
+///  * - Links identity to specific execution context
+///  * - Tenant-scoped accounts require tenantId
+///  * - Platform-scoped accounts forbid tenantId
+model Account {
+  id                String       @id
+  identityId        String
+  scopeCode         String
+  tenantId          String?
+  accountStatusCode String       @default("active")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  identity          Identity     @relation(fields: [identityId], references: [id])
+  accountRoles      AccountRole[]
+  sessions          Session[]
+}
+
+/// *
+///  * Stores password authentication credentials.
+///  *
+///  * Notes:
+///  * - One-to-one with identity
+///  * - Never stores plain text passwords
+///  * - Includes algorithm metadata for verification
+model PasswordCredential {
+  identityId      String    @id
+  passwordHash    String
+  algorithm       String
+  algorithmParams Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  identity        Identity  @relation(fields: [identityId], references: [id])
+}
+
+/// *
+///  * Represents active authentication context.
+///  *
+///  * Notes:
+///  * - Links identity, account, scope, and tenant
+///  * - Has explicit expiration for security
+///  * - Can be revoked administratively
+model Session {
+  id                String     @id
+  identityId        String
+  accountId         String
+  scopeCode         String
+  tenantId          String?
+  createdAt         DateTime   @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  revokedReasonCode String?
+  identity          Identity   @relation(fields: [identityId], references: [id])
+  account           Account    @relation(fields: [accountId], references: [id])
+}
+
+/// *
+///  * Represents a role within the authorization system.
+///  *
+///  * Notes:
+///  * - Scope-bound to prevent cross-scope assignment
+///  * - Human-readable for management interfaces
+///  * - Stable codes for referential integrity
+model Role {
+  code          String            @id
+  scopeCode     String
+  name          String
+  description   String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  accountRoles  AccountRole[]
+  rolePermissions RolePermission[]
+}
+
+/// *
+///  * Represents a granular permission.
+///  *
+///  * Notes:
+///  * - Scope-bound to prevent cross-scope assignment
+///  * - Action:resource format for clarity
+///  * - Descriptive for audit and management
+model Permission {
+  code            String            @id
+  scopeCode       String
+  action          String
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  rolePermissions RolePermission[]
+}
+
+/// *
+///  * Links account to role within scope.
+///  *
+///  * Notes:
+///  * - Prevents cross-scope role assignment
+///  * - Tracks assignment metadata for audit
+///  * - Supports multiple roles per account
+model AccountRole {
+  id          String     @id
+  accountId   String
+  roleCode    String
+  assignedAt  DateTime   @default(now())
+  assignedBy  String
+  reason      String?
+  account     Account    @relation(fields: [accountId], references: [id])
+  role        Role       @relation(fields: [roleCode], references: [code])
+
+  @@unique([accountId, roleCode])
+}
+
+/// *
+///  * Links role to permission.
+///  *
+///  * Notes:
+///  * - Prevents cross-scope permission grants
+///  * - Tracks grant metadata for audit
+///  * - Supports many-to-many relationships
+model RolePermission {
+  id            String     @id
+  roleCode      String
+  permissionCode String
+  grantedAt     DateTime   @default(now())
+  reason        String?
+  role          Role       @relation(fields: [roleCode], references: [code])
+  permission    Permission @relation(fields: [permissionCode], references: [code])
+
+  @@unique([roleCode, permissionCode])
+}
