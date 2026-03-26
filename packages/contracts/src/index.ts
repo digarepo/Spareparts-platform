@@ -16,3 +16,4 @@ export * from './catalog/classification-assignment.request';
 export * from './catalog/product-mutation.request';
 export * from './catalog/variant-mutation.request';
 export * from './catalog/catalog-listing.request';
+export * from './iam';
