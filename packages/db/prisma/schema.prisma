@@ -485,3 +485,153 @@ model AuthEvent {
   @@index([eventType])
 }
 
+/// *
+///  * Represents a tenant's inventory for a specific catalog variant.
+///  *
+///  * Notes:
+///  * - Uses loose coupling with catalog via catalog_variant_id (no FK)
+///  * - Enforces tenant isolation via tenant_id and RLS policies
+///  * - Maintains quantity invariants with check constraints (added via migration)
+///  *
+model InventoryItem {
+  id                String    @id @default(cuid())
+  tenantId          String    @map("tenant_id")
+  catalogVariantId  String    @map("catalog_variant_id")
+  onHandQuantity    Int       @map("on_hand_quantity") @default(0)
+  reservedQuantity  Int       @map("reserved_quantity") @default(0)
+  allocatedQuantity Int       @map("allocated_quantity") @default(0)
+  isActive          Boolean   @map("is_active") @default(true)
+  isSellable        Boolean   @map("is_sellable") @default(false)
+  lowStockThreshold Int?      @map("low_stock_threshold")
+  location          Json?
+  source            String?
+  unitCost          Decimal?  @map("unit_cost") @db.Decimal(10, 2)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  stockMovements    StockMovement[]
+  reservations       InventoryReservation[]
+  allocations        InventoryAllocation[]
+  auditEvents        InventoryAuditEvent[]
+
+  @@unique([tenantId, catalogVariantId])
+  @@index([tenantId])
+  @@index([catalogVariantId])
+  @@index([tenantId, isActive])
+  @@index([tenantId, isSellable])
+  @@map("inventory_items")
+}
+
+/// *
+///  * Represents a temporary claim against available inventory.
+///  *
+///  * Notes:
+///  * - Reduces available quantity but not on-hand quantity
+///  * - Has finite lifetime and can be released or converted
+///  * - Used for cart reservations, order holds, manual holds
+///  *
+model InventoryReservation {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  inventoryId String    @map("inventory_id")
+  quantity    Int
+  purpose     String
+  status      String    @default("active")
+  expiresAt   DateTime? @map("expires_at")
+  releasedAt  DateTime? @map("released_at")
+  referenceId String?   @map("reference_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  inventory   InventoryItem @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, inventoryId])
+  @@index([expiresAt])
+  @@index([status])
+  @@index([tenantId, purpose])
+  @@index([tenantId, status, expiresAt])
+  @@map("inventory_reservations")
+}
+
+/// *
+///  * Represents a committed assignment of inventory to fulfillment.
+///  *
+///  * Notes:
+///  * - Durable and not reversible without compensating action
+///  * - Reduces available quantity permanently
+///  * - Used for order fulfillment, shipping allocations
+///  *
+model InventoryAllocation {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  inventoryId String    @map("inventory_id")
+  quantity    Int
+  purpose     String
+  referenceId String    @map("reference_id")
+  reversedAt  DateTime? @map("reversed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  inventory   InventoryItem @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, inventoryId, referenceId])
+  @@index([tenantId, inventoryId])
+  @@index([referenceId])
+  @@index([tenantId, purpose])
+  @@map("inventory_allocations")
+}
+
+/// *
+///  * Represents any change to on-hand inventory quantity.
+///  *
+///  * Notes:
+///  * - Tracks increases, decreases, and adjustments
+///  * - Used for audit trail and reconciliation
+///  * - Maintains complete change history
+///  *
+model StockMovement {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  inventoryId String    @map("inventory_id")
+  movementType String   @map("movement_type")
+  quantity    Int
+  reason      String
+  referenceId String?   @map("reference_id")
+  initiatedBy String    @map("initiated_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  inventory   InventoryItem @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, inventoryId])
+  @@index([createdAt])
+  @@index([movementType])
+  @@index([referenceId])
+  @@map("stock_movements")
+}
+
+/// *
+///  * Represents an audit event for inventory operations.
+///  *
+///  * Notes:
+///  * - Every mutation produces an audit record
+///  * - Stores before/after state snapshots
+///  * - Provides complete audit trail
+///  *
+model InventoryAuditEvent {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  inventoryId String    @map("inventory_id")
+  eventType   String    @map("event_type")
+  beforeState Json?     @map("before_state")
+  afterState  Json?     @map("after_state")
+  reason      String
+  initiatedBy String    @map("initiated_by")
+  metadata    Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  inventory   InventoryItem @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, inventoryId])
+  @@index([createdAt])
+  @@index([eventType])
+  @@index([initiatedBy])
+  @@map("inventory_audit_events")
+}
