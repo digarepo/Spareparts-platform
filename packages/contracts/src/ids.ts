@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ulid } from 'ulid';
 
 /**
  * Opaque identifier for a tenant.
@@ -47,3 +48,32 @@ export type CustomerId = z.infer<typeof CustomerIdSchema>;
 export const CorrelationIdSchema = z.string().min(8);
 
 export type CorrelationId = z.infer<typeof CorrelationIdSchema>;
+
+/**
+ * Validates a ULID (Universally Unique Lexicographically Sortable Identifier).
+ *
+ * @remarks
+ *  - **Scope:** platform
+ *  - **Authority:** contracts only; no persistence semantics
+ *  - **Invariants:** 26-character string, Crockford Base32 encoding
+ *  - **Format:** 48-bit timestamp + 80-bit randomness
+ *
+ * ULIDs are sortable by generation time and URL-safe.
+ * They're perfect for database primary keys and public identifiers.
+ */
+export const ULIDSchema = z.string().regex(/^[0-9A-HJKMNP-TV-z]{26}$/, "Invalid ULID format");
+export type ULID = z.infer<typeof ULIDSchema>;
+
+/**
+ * Generates a new ULID.
+ *
+ * @remarks
+ *  - Uses the ulid library for generation
+ *  - Cryptographically secure randomness
+ *  - Sortable by timestamp
+ *
+ * @returns A new ULID string
+ */
+export function generateULID(): ULID {
+    return ulid();
+}

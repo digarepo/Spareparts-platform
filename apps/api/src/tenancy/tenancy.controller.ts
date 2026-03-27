@@ -38,7 +38,7 @@ export class TenancyController {
             actorKind: ctx.actor.kind,
           };
 
-    const memberships = await withRlsTransaction(this.prisma, rlsCtx, async (tx: Prisma.TransactionClient) => {
+    const memberships = await withRlsTransaction(this.prisma.db, rlsCtx, async (tx: Prisma.TransactionClient) => {
       return tx.tenantMembership.findMany({
         select: {
           tenantId: true,
