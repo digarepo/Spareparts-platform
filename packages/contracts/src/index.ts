@@ -5,15 +5,6 @@ export * from './ids';
 export * from './scope';
 export * from './policy/tenant-context';
 export * from './policy/tenant-context.decorator';
-export * from './catalog/identifiers';
-export * from './catalog/quantity';
-export * from './catalog/pricing';
-export * from './catalog/entities';
-export * from './catalog/product-state.schema';
-export * from './catalog/taxonomy.schema';
-export * from './catalog/taxonomy-mutation.request';
-export * from './catalog/classification-assignment.request';
-export * from './catalog/product-mutation.request';
-export * from './catalog/variant-mutation.request';
-export * from './catalog/catalog-listing.request';
+export * from './catalog';
 export * from './iam';
+export * from './inventory'
