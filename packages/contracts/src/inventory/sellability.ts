@@ -19,6 +19,7 @@ export const SellabilityDecisionSchema = z.enum([
   'restricted',
   'unknown',
 ]);
+export type SellabilityDecision = z.infer<typeof SellabilityDecisionSchema>;
 
 /**
  * Sellability reason enumeration.
@@ -38,6 +39,7 @@ export const SellabilityReasonSchema = z.enum([
   'business_rule',
   'system_error',
 ]);
+export type SellabilityReason = z.infer<typeof SellabilityReasonSchema>;
 
 /**
  * Sellability evaluation request schema.
