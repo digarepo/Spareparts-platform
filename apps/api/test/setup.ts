@@ -5,6 +5,45 @@ const mockPrisma = {
   $connect: vi.fn().mockResolvedValue(undefined),
   $disconnect: vi.fn().mockResolvedValue(undefined),
   $on: vi.fn(),
+  $extends: vi.fn().mockImplementation((extension) => {
+    // Return a mock that simulates the extended client with auth context
+    const extendedClient = {
+      ...mockPrisma,
+      $setAuthContext: vi.fn(),
+      $getAuthContext: vi.fn(),
+    };
+
+    // Mock the query interception for auth context
+    if (extension.query && extension.query.$allOperations) {
+      const originalOperations = { ...mockPrisma };
+
+      // Wrap each model operation with the auth context check
+      Object.keys(originalOperations).forEach(modelName => {
+        if (typeof originalOperations[modelName] === 'object' && modelName !== '$connect' && modelName !== '$disconnect') {
+          const modelOperations = originalOperations[modelName];
+          extendedClient[modelName] = {};
+
+          Object.keys(modelOperations).forEach(operationName => {
+            if (typeof modelOperations[operationName] === 'function') {
+              extendedClient[modelName][operationName] = vi.fn().mockImplementation((...args) => {
+                // Simulate the auth context check
+                const authContext = extension.query.$allOperations({
+                  model: modelName,
+                  operation: operationName,
+                  args: args[0] || {},
+                  query: () => modelOperations[operationName](...args)
+                });
+
+                return authContext;
+              });
+            }
+          });
+        }
+      });
+    }
+
+    return extendedClient;
+  }),
   product: {
     create: vi.fn(),
     findUnique: vi.fn(),

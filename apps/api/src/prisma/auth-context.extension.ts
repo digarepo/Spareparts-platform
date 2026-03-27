@@ -197,7 +197,7 @@ export const withAuthContext = (client: PrismaClient) => {
  * @returns true if model is a system model
  */
 function isSystemModel(model?: string): boolean {
-  const systemModels = ['AuthEvent', 'Tenant', 'Migration'];
+  const systemModels = ['AuthEvent', 'Tenant', 'Migration', 'authEvent', 'tenant', 'migration'];
   return systemModels.includes(model || '');
 }
 
