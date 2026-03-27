@@ -456,3 +456,32 @@ model RolePermission {
 
   @@unique([roleCode, permissionCode])
 }
+
+/// *
+///  * Records authentication events for audit trail.
+///  *
+///  * Notes:
+///  * - Append-only audit log for security compliance
+///  * - Tracks success/failure events for analysis
+///  * - Supports forensic investigation
+///  * - Platform-scoped (no tenant filtering for audit visibility)
+model AuthEvent {
+  id           String   @id @default(cuid())
+  identityId   String?
+  accountId    String?
+  eventType    String
+  scope        String?
+  tenantId     String?
+  sessionId    String?
+  failureReason String?
+  ipAddress    String?
+  userAgent    String?
+  timestamp    DateTime @default(now())
+  success      Boolean
+
+  @@map("auth_events")
+  @@index([identityId])
+  @@index([timestamp])
+  @@index([eventType])
+}
+

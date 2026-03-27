@@ -1,4 +1,4 @@
-import { TypeOf, z } from 'zod';
+import { z } from 'zod';
 import { ScopeSchema } from '@spareparts/contracts/scope';
 
 /**
@@ -44,11 +44,12 @@ export type RefreshTokenRequest = z.infer<typeof RefreshTokenRequestSchema>;
  * Validates a logout request.
  *
  * @remarks
- *  - Session identifier to terminate
- *  - Can be specific session or all sessions
+ *  - Refresh token for session revocation
+ *  - Can also support session-specific logout
  *  - Used for explicit session termination
  */
 export const LogoutRequestSchema = z.object({
+    refreshToken: z.string().min(32).max(512),
     sessionId: z.string().optional(),
     logoutAll: z.boolean().default(false),
 });
