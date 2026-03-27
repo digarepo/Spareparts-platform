@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
+// Set test environment variables
+process.env.JWT_ACCESS_SECRET = 'test-secret-123';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-456';
+
 export default defineConfig({
   test: {
     globals: true,
