@@ -245,18 +245,117 @@ export class InventoryAdjustmentService {
   }
 
   /**
-   * Calculates adjustment impact on available quantity.
+   * Validates an adjustment against inventory aggregate.
    *
-   * @param currentQuantities - Current quantity breakdown
-   * @param adjustment - Quantity adjustment
-   * @returns Impact on available quantity
+   * @param inventory - Inventory aggregate
+   * @param adjustment - Adjustment details
+   * @returns Validation result
    */
-  static calculateAvailableImpact(
-    currentQuantities: InventoryQuantityBreakdown,
-    adjustment: QuantityAdjustment
-  ): number {
-    const adjustmentAmount = this.calculateAdjustmentAmount(adjustment);
-    return adjustmentAmount;
+  static validateAdjustment(
+    inventory: InventoryAggregate,
+    adjustment: {
+      type: 'increase' | 'decrease' | 'adjustment';
+      quantity: number;
+      reason: string;
+      referenceId?: string;
+    }
+  ): {
+    isValid: boolean;
+    errors: string[];
+    warnings?: string[];
+  } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Validate quantity
+    if (adjustment.quantity <= 0) {
+      errors.push('Quantity must be positive');
+    }
+
+    // Validate reason
+    if (!adjustment.reason || adjustment.reason.trim().length === 0) {
+      errors.push('Reason is required');
+    }
+
+    if (adjustment.reason.length > 500) {
+      errors.push('Reason cannot exceed 500 characters');
+    }
+
+    // Validate adjustment type specific rules
+    switch (adjustment.type) {
+      case 'decrease':
+        if (adjustment.quantity > inventory.quantities.onHand) {
+          errors.push('Cannot decrease more than on-hand quantity');
+        }
+
+        if (adjustment.quantity > inventory.quantities.available) {
+          errors.push('Cannot decrease below allocated + reserved quantities');
+        }
+        break;
+
+      case 'increase':
+        if (adjustment.quantity > 100000) {
+          warnings.push('Large increase quantity may require review');
+        }
+        break;
+
+      case 'adjustment':
+        const newOnHand = inventory.quantities.onHand + adjustment.quantity;
+        if (newOnHand < 0) {
+          errors.push('Adjustment would result in negative on-hand quantity');
+        }
+
+        if (newOnHand < inventory.quantities.reserved + inventory.quantities.allocated) {
+          errors.push('Adjustment would violate reservation and allocation commitments');
+        }
+        break;
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    };
+  }
+
+  /**
+   * Calculates new quantities after adjustment.
+   *
+   * @param inventory - Inventory aggregate
+   * @param adjustmentType - Type of adjustment
+   * @param quantity - Adjustment quantity
+   * @returns New quantity breakdown
+   */
+  static calculateNewQuantities(
+    inventory: InventoryAggregate,
+    adjustmentType: 'increase' | 'decrease' | 'adjustment',
+    quantity: number
+  ): {
+    onHandQuantity: number;
+    reservedQuantity: number;
+    allocatedQuantity: number;
+  } {
+    let newOnHand: number;
+
+    switch (adjustmentType) {
+      case 'increase':
+        newOnHand = inventory.quantities.onHand + quantity;
+        break;
+      case 'decrease':
+        newOnHand = inventory.quantities.onHand - quantity;
+        break;
+      case 'adjustment':
+        newOnHand = inventory.quantities.onHand + quantity;
+        break;
+      default:
+        throw new Error(`Unknown adjustment type: ${adjustmentType}`);
+    }
+
+    return {
+      onHandQuantity: newOnHand,
+      reservedQuantity: inventory.quantities.reserved,
+      allocatedQuantity: inventory.quantities.allocated,
+    };
   }
 }
 

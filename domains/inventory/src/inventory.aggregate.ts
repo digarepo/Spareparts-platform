@@ -83,23 +83,64 @@ export class InventoryAggregateFactory {
   }
 
   /**
-   * Reconstitutes an inventory aggregate from persistence.
+   * Creates inventory aggregate from Prisma entity.
    *
-   * @param data - Persistent data
-   * @returns Reconstituted inventory aggregate
+   * @param entity - Prisma inventory entity
+   * @returns Inventory aggregate
    * @throws Error - If invariants are violated
    *
    * @remarks
-   * - Validates all invariants during reconstitution
-   * - Used for loading from database
-   * - Ensures domain integrity
+   * - Maps database entity to domain aggregate
+   * - Validates all invariants during conversion
+   * - Used for loading from repository
    */
-  static reconstitute(data: Omit<InventoryAggregate, 'id'>): InventoryAggregate {
-    const aggregate: InventoryAggregate = {
-      id: `inv_${data.tenantId}_${data.catalogVariantId}`,
-      ...data,
+  static fromPrismaEntity(entity: {
+    id: string;
+    tenantId: string;
+    catalogVariantId: string;
+    onHandQuantity: number;
+    reservedQuantity: number;
+    allocatedQuantity: number;
+    isActive: boolean;
+    isSellable: boolean;
+    lowStockThreshold?: number | null;
+    location?: any;
+    source?: string | null;
+    unitCost?: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): InventoryAggregate {
+    const quantities: InventoryQuantityBreakdown = {
+      onHand: entity.onHandQuantity,
+      reserved: entity.reservedQuantity,
+      allocated: entity.allocatedQuantity,
+      available: InventoryQuantityCalculator.calculateAvailable(
+        entity.onHandQuantity,
+        entity.reservedQuantity,
+        entity.allocatedQuantity
+      ),
     };
 
+    const aggregate: InventoryAggregate = {
+      id: entity.id,
+      tenantId: entity.tenantId,
+      catalogVariantId: entity.catalogVariantId,
+      quantities,
+      status: {
+        isActive: entity.isActive,
+        isSellable: entity.isSellable,
+        lowStockThreshold: entity.lowStockThreshold || undefined,
+      },
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      metadata: {
+        location: entity.location as string | undefined,
+        source: entity.source || undefined,
+        unitCost: entity.unitCost ? Number(entity.unitCost) : undefined,
+      },
+    };
+
+    // Validate invariants
     InventoryAggregateValidator.validateInvariants(aggregate);
 
     return aggregate;
@@ -133,6 +174,26 @@ export class InventoryAggregateValidator {
   }
 
   /**
+   * Validates identity invariants.
+   *
+   * @param aggregate - Inventory aggregate to validate
+   * @throws Error - If identity invariants are violated
+   *
+   * @remarks
+   * - Validates tenant and variant identifiers
+   * - Ensures proper identity structure
+   */
+  private static validateIdentity(aggregate: InventoryAggregate): void {
+    if (!aggregate.tenantId) {
+      throw new Error('Tenant ID is required');
+    }
+
+    if (!aggregate.catalogVariantId) {
+      throw new Error('Catalog variant ID is required');
+    }
+  }
+
+  /**
    * Validates quantity breakdown invariants.
    *
    * @param quantities - Quantity breakdown to validate
@@ -143,7 +204,7 @@ export class InventoryAggregateValidator {
    * - Ensures reserved + allocated <= on-hand
    * - Validates available calculation
    */
-  private static validateQuantities(quantities: InventoryQuantityBreakdown): void {
+  static validateQuantities(quantities: InventoryQuantityBreakdown): void {
     if (quantities.onHand < 0) {
       throw new Error('On-hand quantity cannot be negative');
     }
@@ -187,23 +248,48 @@ export class InventoryAggregateValidator {
   }
 
   /**
-   * Validates identity invariants.
+   * Validates quantity invariants with result.
    *
-   * @param aggregate - Inventory aggregate to validate
-   * @throws Error - If identity invariants are violated
-   *
-   * @remarks
-   * - Validates tenant and variant identifiers
-   * - Ensures proper identity structure
+   * @param quantities - Quantity breakdown to validate
+   * @returns Validation result
    */
-  private static validateIdentity(aggregate: InventoryAggregate): void {
-    if (!aggregate.tenantId) {
-      throw new Error('Tenant ID is required');
+  static validateQuantitiesWithResult(quantities: {
+    onHandQuantity?: number;
+    reservedQuantity?: number;
+    allocatedQuantity?: number;
+  }): {
+    isValid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+
+    if (quantities.onHandQuantity !== undefined && quantities.onHandQuantity < 0) {
+      errors.push('On-hand quantity cannot be negative');
     }
 
-    if (!aggregate.catalogVariantId) {
-      throw new Error('Catalog variant ID is required');
+    if (quantities.reservedQuantity !== undefined && quantities.reservedQuantity < 0) {
+      errors.push('Reserved quantity cannot be negative');
     }
+
+    if (quantities.allocatedQuantity !== undefined && quantities.allocatedQuantity < 0) {
+      errors.push('Allocated quantity cannot be negative');
+    }
+
+    // Check oversubscription if all quantities are provided
+    if (
+      quantities.onHandQuantity !== undefined &&
+      quantities.reservedQuantity !== undefined &&
+      quantities.allocatedQuantity !== undefined
+    ) {
+      if (quantities.reservedQuantity + quantities.allocatedQuantity > quantities.onHandQuantity) {
+        errors.push('Reserved and allocated quantities cannot exceed on-hand quantity');
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
   }
 }
 
