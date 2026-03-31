@@ -28,7 +28,10 @@
       "@spareparts/db": ["packages/db/src/index.ts"],
       "@spareparts/db/*": ["packages/db/src/*"],
       "@spareparts/ui": ["packages/ui/src/index.ts"],
-      "@spareparts/ui/*": ["packages/ui/src/*"]
+      "@spareparts/ui/*": ["packages/ui/src/*"],
+      "@spareparts/domains": ["domains/inventory/src/index.ts"],
+      "@spareparts/domains/inventory": ["domains/inventory/src/index.ts"],
+      "@spareparts/domains/inventory/*": ["domains/inventory/src/*"]
     }
   }
 }
