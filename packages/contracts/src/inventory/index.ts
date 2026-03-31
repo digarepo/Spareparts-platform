@@ -14,3 +14,4 @@ export * from './snapshots';
 export * from './events';
 export * from './sellability';
 export * from './allocations';
+export * from './movement-types';
