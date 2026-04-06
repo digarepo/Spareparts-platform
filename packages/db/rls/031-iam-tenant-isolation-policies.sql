@@ -21,7 +21,7 @@ BEGIN
     SELECT EXISTS(
         SELECT 1 FROM "Account"
         WHERE id = account_id_param
-        AND scopeCode = scope_code_param
+        AND roleCode = scope_code_param
         AND (tenant_id_param IS NULL OR "tenantId" = tenant_id_param)
     ) INTO account_exists;
 
@@ -37,7 +37,7 @@ SET search_path = public
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT scopeCode, "tenantId"
+    SELECT roleCode, "tenantId"
     FROM "Account"
     WHERE id = account_id_param;
 END;
@@ -49,16 +49,16 @@ CREATE POLICY account_select ON "Account"
 FOR SELECT
 USING (
   -- Platform actors can see all accounts (supervisory access)
-  (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform')
+  (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform')
   OR
   -- Tenant actors can only see accounts in their tenant context
   (app.current_actor_kind() = 'tenant'
-   AND "scopeCode" = 'tenant'
+   AND "roleCode" = 'tenant'
    AND "tenantId" = app.current_tenant_id())
   OR
   -- Customer actors can only see customer accounts
   (app.current_actor_kind() = 'customer'
-   AND "scopeCode" = 'customer'
+   AND "roleCode" = 'customer'
    AND "tenantId" = app.current_tenant_id())
 );
 
@@ -67,16 +67,16 @@ CREATE POLICY account_insert ON "Account"
 FOR INSERT
 WITH CHECK (
   -- Platform actors can insert platform-scoped accounts only
-  (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform' AND "tenantId" IS NULL)
+  (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform' AND "tenantId" IS NULL)
   OR
   -- Tenant actors can only insert tenant-scoped accounts for their tenant
   (app.current_actor_kind() = 'tenant'
-   AND "scopeCode" = 'tenant'
+   AND "roleCode" = 'tenant'
    AND "tenantId" = app.current_tenant_id())
   OR
   -- Customer actors can only insert customer accounts for their tenant
   (app.current_actor_kind() = 'customer'
-   AND "scopeCode" = 'customer'
+   AND "roleCode" = 'customer'
    AND "tenantId" = app.current_tenant_id())
 );
 
@@ -85,35 +85,35 @@ CREATE POLICY account_update ON "Account"
 FOR UPDATE
 USING (
   -- Platform actors can update platform accounts only
-  (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform')
+  (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform')
   OR
   -- Tenant actors can only update tenant accounts in their context
   (app.current_actor_kind() = 'tenant'
-   AND "scopeCode" = 'tenant'
+   AND "roleCode" = 'tenant'
    AND "tenantId" = app.current_tenant_id())
   OR
   -- Customer actors can only update customer accounts in their context
   (app.current_actor_kind() = 'customer'
-   AND "scopeCode" = 'customer'
+   AND "roleCode" = 'customer'
    AND "tenantId" = app.current_tenant_id())
 )
 WITH CHECK (
   -- CRITICAL: Prevent scope or tenant changes that would violate isolation
   -- This ensures accounts cannot be "stolen" by moving them to another tenant
-  "scopeCode" = (SELECT "scopeCode" FROM "Account" WHERE id = "id")
+  "roleCode" = (SELECT "roleCode" FROM "Account" WHERE id = "id")
   AND "tenantId" = (SELECT "tenantId" FROM "Account" WHERE id = "id")
   AND (
     -- Platform actors can only update platform accounts
-    (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform' AND "tenantId" IS NULL)
+    (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform' AND "tenantId" IS NULL)
     OR
     -- Tenant actors can only update tenant accounts in their tenant
     (app.current_actor_kind() = 'tenant'
-     AND "scopeCode" = 'tenant'
+     AND "roleCode" = 'tenant'
      AND "tenantId" = app.current_tenant_id())
     OR
     -- Customer actors can only update customer accounts in their tenant
     (app.current_actor_kind() = 'customer'
-     AND "scopeCode" = 'customer'
+     AND "roleCode" = 'customer'
      AND "tenantId" = app.current_tenant_id())
   )
 );
@@ -126,12 +126,12 @@ CREATE POLICY session_select ON "Session"
 FOR SELECT
 USING (
   -- Platform actors can see platform account sessions
-  (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform')
+  (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform')
   OR
   -- Tenant actors can only see sessions for accounts in their tenant
   -- AND matching session type to prevent cross-type access
   (app.current_actor_kind() = 'tenant'
-   AND "scopeCode" = 'tenant'
+   AND "roleCode" = 'tenant'
    AND "tenantId" = app.current_tenant_id()
    AND (current_setting('app.session_type', true) IS NULL
         OR current_setting('app.session_type', true) = 'tenant'))
@@ -139,7 +139,7 @@ USING (
   -- Customer actors can only see customer sessions in their tenant
   -- AND matching session type to prevent cross-type access
   (app.current_actor_kind() = 'customer'
-   AND "scopeCode" = 'customer'
+   AND "roleCode" = 'customer'
    AND "tenantId" = app.current_tenant_id()
    AND (current_setting('app.session_type', true) IS NULL
         OR current_setting('app.session_type', true) = 'customer'))
@@ -170,16 +170,16 @@ CREATE POLICY account_role_select ON "AccountRole"
 FOR SELECT
 USING (
   -- Platform actors can see platform role assignments
-  (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform')
+  (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform')
   OR
   -- Tenant actors can only see role assignments for accounts in their tenant
   (app.current_actor_kind() = 'tenant'
-   AND "scopeCode" = 'tenant'
+   AND "roleCode" = 'tenant'
    AND "tenantId" = app.current_tenant_id())
   OR
   -- Customer actors can only see customer role assignments in their tenant
   (app.current_actor_kind() = 'customer'
-   AND "scopeCode" = 'customer'
+   AND "roleCode" = 'customer'
    AND "tenantId" = app.current_tenant_id())
 );
 
@@ -195,14 +195,14 @@ WITH CHECK (
   )
   AND (
     -- Role assignments must match the actor's scope and tenant context
-    (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform')
+    (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform')
     OR
     (app.current_actor_kind() = 'tenant'
-     AND "scopeCode" = 'tenant'
+     AND "roleCode" = 'tenant'
      AND "tenantId" = app.current_tenant_id())
     OR
     (app.current_actor_kind() = 'customer'
-     AND "scopeCode" = 'customer'
+     AND "roleCode" = 'customer'
      AND "tenantId" = app.current_tenant_id())
   )
 );
@@ -213,16 +213,16 @@ CREATE POLICY role_permission_select ON "RolePermission"
 FOR SELECT
 USING (
   -- Platform actors can see platform role permissions
-  (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform')
+  (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform')
   OR
   -- Tenant actors can only see tenant role permissions
   (app.current_actor_kind() = 'tenant'
-   AND "scopeCode" = 'tenant'
+   AND "roleCode" = 'tenant'
    AND "tenantId" = app.current_tenant_id())
   OR
   -- Customer actors can only see customer role permissions
   (app.current_actor_kind() = 'customer'
-   AND "scopeCode" = 'customer'
+   AND "roleCode" = 'customer'
    AND "tenantId" = app.current_tenant_id())
 );
 
@@ -231,14 +231,14 @@ CREATE POLICY role_permission_insert ON "RolePermission"
 FOR INSERT
 WITH CHECK (
   -- Permission grants must match the actor's scope and tenant context
-  (app.current_actor_kind() = 'platform' AND "scopeCode" = 'platform')
+  (app.current_actor_kind() = 'platform' AND "roleCode" = 'platform')
   OR
   (app.current_actor_kind() = 'tenant'
-   AND "scopeCode" = 'tenant'
+   AND "roleCode" = 'tenant'
    AND "tenantId" = app.current_tenant_id())
   OR
   (app.current_actor_kind() = 'customer'
-   AND "scopeCode" = 'customer'
+   AND "roleCode" = 'customer'
    AND "tenantId" = app.current_tenant_id())
 );
 
