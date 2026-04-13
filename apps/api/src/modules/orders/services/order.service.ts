@@ -293,8 +293,8 @@ export class OrderService {
       throw new NotFoundException(`Cart access denied for customer: ${customerId}`);
     }
 
-    if (cart.statusId !== 'status_active') {
-      throw new ConflictException(`Cannot convert cart with status: ${cart.statusId}`);
+    if (cart.status !== 'ACTIVE') {
+      throw new ConflictException(`Cannot convert cart with status: ${cart.status}`);
     }
 
     if (cart.items.length === 0) {
