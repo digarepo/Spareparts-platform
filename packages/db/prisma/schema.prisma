@@ -635,3 +635,372 @@ model InventoryAuditEvent {
   @@index([initiatedBy])
   @@map("inventory_audit_events")
 }
+
+
+/// *
+///  * Lookup table for cart status codes.
+///  *
+///  * Notes:
+///  * - String-based status codes per blueprint requirements
+///  * - Supports governance without DB enums
+///  * - Platform-owned, tenant-used
+///  * - Includes business logic flags for second line of defense
+model CartStatus {
+  code        String    @id
+  /// *
+  ///    * Human-readable status label.
+  label       String
+  /// *
+  ///    * Description of status behavior.
+  description String?
+  /// *
+  ///    * Whether carts with this status can be modified.
+  ///    * Acts as DB-level validation for TypeScript domain logic.
+  isModifiable Boolean   @default(true)
+  /// *
+  ///    * Whether carts with this status can be converted to orders.
+  ///    * Prevents conversion of abandoned or expired carts.
+  isConvertible Boolean   @default(false)
+  /// *
+  ///    * Whether this status represents a deleted cart.
+  ///    * Used for soft-delete filtering and analytics.
+  isDeleted    Boolean   @default(false)
+  /// *
+  ///    * Display order in UI.
+  sortOrder   Int?
+  /// *
+  ///    * Standard audit timestamps.
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  carts       Cart[]
+}
+
+/// *
+///  * Lookup table for order status codes.
+///  *
+///  * Notes:
+///  * - String-based status codes per blueprint requirements
+///  * - Supports governance without DB enums
+///  * - Platform-owned, tenant-used
+///  * - Includes business logic flags for second line of defense
+model OrderStatus {
+  code        String    @id
+  /// *
+  ///    * Human-readable status label.
+  label       String
+  /// *
+  ///    * Description of status behavior.
+  description String?
+  /// *
+  ///    * Whether orders with this status can be modified.
+  ///    * Acts as DB-level validation for TypeScript domain logic.
+  isModifiable Boolean   @default(true)
+  /// *
+  ///    * Whether orders with this status are terminal (no further transitions).
+  ///    * Critical for state machine enforcement at DB level.
+  isTerminal   Boolean   @default(false)
+  /// *
+  ///    * Whether this status allows customer address updates.
+  ///    * Fine-grained control for customer self-service.
+  allowsAddressUpdates Boolean @default(false)
+  /// *
+  ///    * Display order in UI.
+  sortOrder   Int?
+  /// *
+  ///    * Standard audit timestamps.
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  orders      Order[]
+}
+
+/// *
+///  * Represents a customer's shopping cart within a tenant.
+///  *
+///  * Notes:
+///  * - Customer-owned, tenant-responsible for multi-tenant integrity
+///  * - Uses ULID for distributed system compatibility and sortability
+///  * - One cart per customer per tenant enforced by unique constraint
+///  * - Includes price freshness tracking for Ethiopian market volatility
+///  * - Soft-delete via status rather than physical deletion for analytics
+model Cart {
+  id                String    @id
+  customerId        String    @map("customer_id")
+  tenantId          String    @map("tenant_id")
+  status            String    @default("active")
+  currency          String    @default("ETB") // Ethiopia context
+  expiresAt         DateTime? @map("expires_at")
+  /// *
+  ///    * Cart subtotal for quick queries and reporting.
+  ///    * Calculated and maintained at application level.
+  ///    * String-based decimal prevents floating-point errors.
+  subtotalAmount    String?   @map("subtotal_amount")
+  /// *
+  ///    * Total number of items in cart (sum of quantities).
+  ///    * Denormalized for cart list performance.
+  totalItems        Int?      @map("total_items") @default(0)
+  /// *
+  ///    * Metadata for promotions, discounts, or campaign tracking.
+  ///    * JSONB for flexible schema evolution.
+  metadata          Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  statusRelation    CartStatus         @relation(fields: [status], references: [code])
+  items             CartItem[]
+  statusHistory     CartStatusHistory[]
+
+  @@unique([customerId, tenantId]) // One cart per customer per tenant
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@index([expiresAt]) // For cart cleanup jobs
+  @@index([createdAt]) // For analytics
+  @@index([status, expiresAt]) // For abandoned cart detection
+  @@map("carts")
+}
+
+/// *
+///  * Represents items within a customer's cart.
+///  *
+///  * Notes:
+///  * - Tracks observed unit price and capture timestamp for freshness validation
+///  * - Supports price freshness validation for Ethiopian market
+///  * - Links to catalog variant via loose coupling (no FK dependency)
+///  * - Uses ULID for distributed system compatibility
+///  * - Denormalized customerId for RLS performance optimization
+model CartItem {
+  id                String    @id
+  cartId            String    @map("cart_id")
+  customerId        String    @map("customer_id") // Denormalized for RLS performance
+  tenantId          String    @map("tenant_id")
+  catalogVariantId  String    @map("catalog_variant_id")
+  quantity          Int
+  /// *
+  ///    * Observed unit price at time of adding to cart.
+  ///    * String-based decimal prevents floating-point errors.
+  ///    * Critical for price freshness validation.
+  observedUnitPrice String    @map("observed_unit_price")
+  /// *
+  ///    * Line item total (quantity * observedUnitPrice).
+  ///    * Denormalized for cart calculation performance.
+  lineTotal         String    @map("line_total")
+  /// *
+  ///    * Product name snapshot at time of adding to cart.
+  ///    * Preserves accuracy even if product is later renamed.
+  productName       String    @map("product_name")
+  /// *
+  ///    * Variant name snapshot at time of adding to cart.
+  ///    * Preserves accuracy for order history.
+  variantName       String    @map("variant_name")
+  /// *
+  ///    * When the price was captured for freshness validation.
+  ///    * Essential for Ethiopian market price volatility checks.
+  priceCapturedAt   DateTime  @map("price_captured_at")
+  /// *
+  ///    * Metadata for promotions, discounts, or variant attributes.
+  ///    * JSONB for flexible schema evolution.
+  metadata          Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  cart              Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, catalogVariantId]) // One item per product per cart
+  @@index([tenantId, catalogVariantId]) // For inventory lookups
+  @@index([cartId]) // For cart item queries
+  @@index([customerId]) // For customer cart queries (RLS optimization)
+  @@index([priceCapturedAt]) // For price freshness validation
+  @@map("cart_items")
+}
+
+/// *
+///  * Represents a customer's order within a tenant.
+///  *
+///  * Notes:
+///  * - Customer-owned, tenant-responsible for multi-tenant integrity
+///  * - Immutable pricing snapshots for order integrity and compliance
+///  * - Links to inventory reservations for stock control and audit
+///  * - Ethiopia-specific address fields (subCity, woreda) in JSON structure
+///  * - Comprehensive financial breakdown for reporting and analytics
+model Order {
+  id                String    @id
+  customerId        String    @map("customer_id")
+  tenantId          String    @map("tenant_id")
+  status            String    @default("pending")
+  currency          String    @default("ETB") // Ethiopia context
+  /// *
+  ///    * Order subtotal (sum of all item line totals).
+  ///    * Immutable snapshot at order creation.
+  ///    * String-based decimal prevents floating-point errors.
+  subtotalAmount    String    @map("subtotal_amount")
+  /// *
+  ///    * Tax amount calculated at order creation.
+  ///    * Immutable for financial compliance.
+  taxAmount         String    @map("tax_amount")
+  /// *
+  ///    * Shipping costs calculated at order creation.
+  ///    * Immutable for financial compliance.
+  shippingAmount    String    @map("shipping_amount")
+  /// *
+  ///    * Total order amount (subtotal + tax + shipping).
+  ///    * Immutable for financial compliance and audit.
+  totalAmount       String    @map("total_amount")
+  /// *
+  ///    * Shipping address with Ethiopia-specific fields.
+  ///    * JSONB structure: {street, city, state, subCity?, woreda?, postalCode?, country}
+  ///    * Strictly validated at application layer before DB insertion.
+  shippingAddress   Json      @map("shipping_address")
+  /// *
+  ///    * Billing address with Ethiopia-specific fields.
+  ///    * JSONB structure: {street, city, state, subCity?, woreda?, postalCode?, country}
+  ///    * Strictly validated at application layer before DB insertion.
+  billingAddress    Json      @map("billing_address")
+  /// *
+  ///    * Number of items in the order (sum of quantities).
+  ///    * Denormalized for order list performance.
+  totalItems        Int       @map("total_items") @default(0)
+  /// *
+  ///    * When the order is expected to be shipped.
+  ///    * Set by tenant staff during order processing.
+  estimatedShipAt   DateTime? @map("estimated_ship_at")
+  /// *
+  ///    * When the order was actually shipped.
+  ///    * Set by system or tenant staff during fulfillment.
+  shippedAt         DateTime? @map("shipped_at")
+  /// *
+  ///    * When the order was delivered.
+  ///    * Set by system or tenant staff during fulfillment.
+  deliveredAt       DateTime? @map("delivered_at")
+  /// *
+  ///    * Metadata for promotions, discounts, or tracking information.
+  ///    * JSONB for flexible schema evolution.
+  metadata          Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  statusRelation    OrderStatus         @relation(fields: [status], references: [code])
+  items             OrderItem[]
+  statusHistory     OrderStatusHistory[]
+
+  @@index([tenantId, status]) // For tenant order management
+  @@index([tenantId, customerId]) // For customer order lookup
+  @@index([customerId]) // For customer order history
+  @@index([createdAt]) // For analytics and reporting
+  @@index([status]) // For order processing queues
+  @@index([estimatedShipAt]) // For shipping queue
+  @@index([shippedAt]) // For delivery tracking
+  @@map("orders")
+}
+
+/// *
+///  * Represents items within an order.
+///  *
+///  * Notes:
+///  * - Immutable pricing snapshot captured at order creation
+///  * - Links to inventory reservation for stock tracking and audit
+///  * - Includes comprehensive metadata for compliance and analytics
+///  * - Uses ULID for distributed system compatibility
+///  * - Denormalized customerId for RLS performance optimization
+model OrderItem {
+  id                    String    @id
+  orderId               String    @map("order_id")
+  customerId            String    @map("customer_id") // Denormalized for RLS performance
+  tenantId              String    @map("tenant_id")
+  catalogVariantId      String    @map("catalog_variant_id")
+  /// *
+  ///    * Link to inventory reservation for stock tracking.
+  ///    * Critical for Phase 4 integration and audit trail.
+  ///    * Nullable for orders created before reservation system.
+  inventoryReservationId String?  @map("inventory_reservation_id")
+  quantity              Int
+  /// *
+  ///    * Immutable unit price snapshot at order creation.
+  ///    * String-based decimal prevents floating-point errors.
+  ///    * Preserves pricing integrity for financial compliance.
+  unitPrice             String    @map("unit_price")
+  /// *
+  ///    * Immutable line total (quantity * unitPrice).
+  ///    * String-based decimal prevents floating-point errors.
+  ///    * Matches Order.totalAmount calculation.
+  totalPrice            String    @map("total_price")
+  /// *
+  ///    * Product name snapshot at order creation.
+  ///    * Preserves accuracy even if product is later renamed.
+  ///    * Critical for order history and customer receipts.
+  productName           String    @map("product_name")
+  /// *
+  ///    * Variant name snapshot at order creation.
+  ///    * Preserves accuracy for order history and customer service.
+  variantName           String    @map("variant_name")
+  /// *
+  ///    * Variant attributes snapshot (color, size, etc.).
+  ///    * JSONB for flexible schema while preserving order accuracy.
+  variantAttributes     Json?     @map("variant_attributes")
+  /// *
+  ///    * Pricing metadata for audit and compliance.
+  ///    * Includes priceCapturedAt, originalCartItemId, tax breakdowns.
+  ///    * JSONB for comprehensive audit trail.
+  pricingMetadata       Json?     @map("pricing_metadata")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  order                 Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, catalogVariantId]) // For catalog analytics
+  @@index([orderId]) // For order item queries
+  @@index([inventoryReservationId]) // For inventory tracking
+  @@index([customerId]) // For customer order queries (RLS optimization)
+  @@map("order_items")
+}
+
+/// *
+///  * Audit trail for cart status changes.
+///  *
+///  * Notes:
+///  * - Tracks all status transitions for audit compliance
+///  * - Enables rollback capabilities and analytics
+///  * - Customer-scoped for isolation and privacy
+///  * - Preserved even if cart is soft-deleted for compliance
+model CartStatusHistory {
+  id             String   @id
+  cartId         String   @map("cart_id")
+  tenantId       String   @map("tenant_id")
+  previousStatus String?  @map("previous_status")
+  newStatus      String   @map("new_status")
+  changedBy      String?  @map("changed_by")
+  actorType      String   @default("user") @map("actor_type")
+  reason         String?
+  changedAt      DateTime @default(now()) @map("changed_at")
+
+  cart           Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, cartId]) // For cart history queries
+  @@index([tenantId, changedAt]) // For tenant analytics
+  @@index([cartId, changedAt]) // For cart timeline
+  @@map("cart_status_history")
+}
+
+/// *
+///  * Audit trail for order status changes.
+///  *
+///  * Notes:
+///  * - Tracks all status transitions for audit compliance
+///  * - Enables rollback capabilities and analytics
+///  * - Customer-scoped for isolation and privacy
+///  * - Critical for dispute resolution and financial compliance
+model OrderStatusHistory {
+  id             String   @id
+  orderId        String   @map("order_id")
+  tenantId       String   @map("tenant_id")
+  previousStatus String?  @map("previous_status")
+  newStatus      String   @map("new_status")
+  changedBy      String?  @map("changed_by")
+  actorType      String   @default("user") @map("actor_type")
+  reason         String?
+  changedAt      DateTime @default(now()) @map("changed_at")
+
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId]) // For order history queries
+  @@index([tenantId, changedAt]) // For tenant analytics
+  @@index([orderId, changedAt]) // For order timeline
+  @@map("order_status_history")
+}
