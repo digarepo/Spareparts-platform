@@ -5,6 +5,9 @@ import { RequestContextMiddleware } from "./http/request-context.middleware";
 import { PrismaModule } from "./prisma/prisma.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { CatalogModule } from "./catalog/catalog.module";
+import { OrdersModule } from './modules/orders/orders.module';
+import { CheckoutModule } from './modules/checkout/checkout.module';
+import { RedisModule } from './redis/redis.module';
 
 /**
  * Root NestJS module for the API application.
@@ -15,7 +18,14 @@ import { CatalogModule } from "./catalog/catalog.module";
  * modules as Slice 5 is implemented.
  */
 @Module({
-  imports: [PrismaModule, TenancyModule, CatalogModule],
+  imports: [
+    PrismaModule,
+    TenancyModule,
+    CatalogModule,
+    OrdersModule,
+    CheckoutModule,
+    RedisModule,
+  ],
   controllers: [HealthController],
   providers: [],
 })
